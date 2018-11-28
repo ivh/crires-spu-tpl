@@ -1,0 +1,14 @@
+# ignore all
+*
+
+# except
+!.gitignore
+
+!OS
+!OS/crotsf/
+!OS/crotsf/src/
+!OS/crotsf/include/
+
+!OS/croseq/
+!OS/croseq/
+!OS/crotsf/include/crotsfINS_ROT*

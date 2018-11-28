@@ -1,0 +1,29 @@
+#******************************************************************************
+# E.S.O. - VLT project
+#
+# "@(#) $Id: crotsfINS_OPTI1.tsfx 313060 2018-08-27 16:10:16Z ccumani $"
+#
+# who       when        what
+# --------  ----------  ----------------------------------------------
+# rsc/asm   2008-11-13  GAS_VISITOR added.
+# rsc/asm   2008-04-25  GAS_CO added.
+# rschmutz  2007-03-28  created
+#
+
+#************************************************************************
+#   NAME
+#   crotsfINS1_OPTI1 - carriage
+#    
+#------------------------------------------------------------------------
+#
+
+TPL.PARAM               "INS.OPTI1.NAME";
+INS.OPTI1.NAME.TYPE     "keyword";
+INS.OPTI1.NAME.RANGE    "FREE GAS_N2O GAS_SGC GAS_VISITOR";
+INS.OPTI1.NAME.DEFAULT  "FREE";
+INS.OPTI1.NAME.LABEL    "Gas cell";
+INS.OPTI1.NAME.MINIHELP "Gas cell";
+
+#___oOo___
+
+

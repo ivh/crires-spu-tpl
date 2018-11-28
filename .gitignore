@@ -8,7 +8,8 @@
 !OS/crotsf/
 !OS/crotsf/src/
 !OS/crotsf/include/
+!OS/crotsf/include/crotsfINS_ROT*
+!OS/crotsf/include/crotsfINS_OPTI1.tsfx
 
 !OS/croseq/
-!OS/croseq/
-!OS/crotsf/include/crotsfINS_ROT*
+!OS/croseq/src/

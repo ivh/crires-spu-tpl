@@ -1,0 +1,23 @@
+#******************************************************************************
+# E.S.O. - VLT project
+#
+# who       when        what
+# --------  ----------  -------------------------------------------------------
+# marquart  2018-11-28  Created
+#
+#******************************************************************************
+#   NAME
+#   crotsfINS_ROT5 - Linear HK polarimeter rotation
+#    
+#------------------------------------------------------------------------------
+
+
+TPL.PARAM               "INS.ROT5.NAME";
+INS.SLIT1.NAME.TYPE       "keyword";
+INS.SLIT1.NAME.RANGE      "0 42 84 126";
+INS.SLIT1.NAME.DEFAULT    "0";
+INS.SLIT1.NAME.LABEL      "Polarimeter turret rotation";
+INS.SLIT1.NAME.MINIHELP   "Polarimeter turret rotation, values: 0 42 84 126";
+
+#
+#___oOo___

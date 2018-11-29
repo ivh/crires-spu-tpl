@@ -7,17 +7,17 @@
 #
 #******************************************************************************
 #   NAME
-#   crotsfINS_ROT1 - Linear HK polarimeter rotation
+#   crotsfINS_ROT4 - Circular HK polarimeter rotation
 #    
 #------------------------------------------------------------------------------
 
 
-TPL.PARAM               "INS.ROT1.NAME";
-INS.ROT1.NAME.TYPE       "number";
-INS.ROT1.NAME.RANGE      "0..720";
-INS.ROT1.NAME.DEFAULT    "0";
-INS.ROT1.NAME.LABEL      "Linear HK polarimeter rotation";
-INS.ROT1.NAME.MINIHELP   "Linear HK polarimeter rotation angle";
+TPL.PARAM               "INS.ROT4.NAME";
+INS.ROT4.NAME.TYPE       "number";
+INS.ROT4.NAME.RANGE      "0..720";
+INS.ROT4.NAME.DEFAULT    "0";
+INS.ROT4.NAME.LABEL      "Circular HK polarimeter rotation";
+INS.ROT4.NAME.MINIHELP   "Circular HK polarimeter rotation angle";
 
 #
 #___oOo___

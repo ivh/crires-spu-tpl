@@ -8,13 +8,13 @@
 #******************************************************************************
 #   NAME
 #   crotsfINS_ROT2 - Linear YJ polarimeter rotation
-#    
+#
 #------------------------------------------------------------------------------
 
 
 TPL.PARAM               "INS.ROT2.NAME";
 INS.ROT2.NAME.TYPE       "number";
-INS.ROT2.NAME.RANGE      "0..720";
+INS.ROT2.NAME.RANGE      "-720..720";
 INS.ROT2.NAME.DEFAULT    "0";
 INS.ROT2.NAME.LABEL      "Linear YJ polarimeter rotation";
 INS.ROT2.NAME.MINIHELP   "Linear YJ polarimeter rotation angle";

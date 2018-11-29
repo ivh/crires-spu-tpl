@@ -8,13 +8,13 @@
 #******************************************************************************
 #   NAME
 #   crotsfINS_ROT3 - Circular HK polarimeter rotation
-#    
+#
 #------------------------------------------------------------------------------
 
 
 TPL.PARAM               "INS.ROT3.NAME";
 INS.ROT3.NAME.TYPE       "number";
-INS.ROT3.NAME.RANGE      "0..720";
+INS.ROT3.NAME.RANGE      "-720..720";
 INS.ROT3.NAME.DEFAULT    "0";
 INS.ROT3.NAME.LABEL      "Circular HK polarimeter rotation";
 INS.ROT3.NAME.MINIHELP   "Circular HK polarimeter rotation angle";

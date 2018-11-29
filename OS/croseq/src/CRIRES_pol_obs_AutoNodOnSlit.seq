@@ -1,0 +1,147 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# E.S.O. - VLT project
+#
+# "@(#) $Id: CRIRES_spec_obs_AutoNodOnSlit.seq 315705 2018-11-07 16:16:04Z ccumani $"
+#
+# who       when        what
+# --------  ----------  -------------------------------------------------------
+#
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   NAME
+#   CRIRES_pol_obs_AutoNodOnSlit - Spectropolarimetry
+# 
+#   DESCRIPTION
+#   ..
+#
+#   SEQUENCE
+#   1. i) instrument is set up according to acquisition
+#     ii) then set up instrument according to optical configuration using P2PP parameters
+#         as above
+#   2. DPR keywords:
+#      DPR.CATG = SCIENCE
+#      DPR.TYPE = OBJECT
+#
+#      - Staring: DPR.TECH =SPECTRUM, DIRECT, OTHER
+#        -> SEQ.NABCYCLES = 0,SEQ.JITTER.WIDTH=0
+#      - Jittered staring: DPR.TECH =SPECTRUM, DIRECT, JITTER
+#        -> SEQ.NABCYCLES = 0,SEQ.JITTER.WIDTH>0
+#      - Nodding: DPR.TECH =SPECTRUM, NODDING, OTHER
+#        -> SEQ.NABCYCLES > 0,SEQ.JITTER.WIDTH=0
+#      - Jittered, nodding: DPR.TECH =SPECTRUM, NODDING, JITTER
+#        -> SEQ.NABCYCLES > 0,SEQ.JITTER.WIDTH >0
+#   3. perform observing sequence exactly following:
+#      ISAAC spec obs AutoNodOnSlit
+#
+#   SEE ALSO
+#   crlibTpl(3), BobTPL(n), tplOBS(3), tplIRACE(3)
+#   VLT-SPE-ESO-14500-3485, Issue 1, Date 07.07.06
+#
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+proc CRIRES_spec_obs_AutoNodOnSlit { } {
+
+    tplNew croseqOS os
+    croseqTPL_AUTONODONSLIT tpl
+
+    tpl Execute
+
+    return ""
+}
+
+
+#---------------------------------------------------------------------------
+# class croseqTPL_AUTONODONSLIT
+#
+global croseqClass
+catch { delete class $croseqClass }
+set croseqClass "croseqTPL_AUTONODONSLIT"
+class croseqTPL_AUTONODONSLIT {
+    inherit croseqTPL_NODONSLIT
+
+    #-----------------------------------------------------------------------
+    # constructor
+    #
+    constructor {} {
+    	set scidet_ysecpix [os Cfg1 Get INS.SCIDET.YSECPIX]
+    }
+
+    #-----------------------------------------------------------------------
+    # Begin
+    #
+    public method Begin {} {
+	seeBobVars
+	os Begin
+
+        # ~~~~~~~~~~~~~~~~~~
+        # Detector Setup (A)
+        # ~~~~~~~~~~~~~~~~~~
+        set det1setupA [os Dcs1 GenDet1SetupA $DET1(READ.CURNAME)]
+	os Setup "-function $det1setupA"
+
+	# ~~~~~~~~~~~~~~
+	# SETUP and init
+	# ~~~~~~~~~~~~~~
+
+	# restore device positions (calibrations may have moved them)
+	os ObsDevicesRestore
+
+	# save SV guiding state
+	set isGuiding [os IsGuiding]
+
+
+	# if moving carriage, suspend AO loop
+	set suspended 0
+	set carrg [os GetMaccStatus "INS.OPTI1.NAME"]
+	if { $carrg != $INS(OPTI1.NAME) && [os IsLoopClosed] } {
+	    os Macao Suspend
+	    set suspended 1
+	}
+	set carrg $INS(OPTI1.NAME)
+	# also center the target star while AO loop is suspended
+	os CenterTarget
+	os Setup "-file $TPL(REFSUP) -function \
+	    INS.MODE        $TPL(MODE) \
+	    INS1.OPTI1.NAME $carrg \
+	    INS.WLEN.CWLEN $INS(WLEN.CWLEN) \
+	    [os Dcs1 GetIntTime]"
+	if { $suspended } {
+	    os Macao Resume
+	}
+
+	# close AO loop and enable SV guiding
+	croseqAOLoopCheckAndClose
+	os Setup "-function OCS.CON.EGUIDE $isGuiding"
+
+	# send observing wavelength to the telescope
+	checkAbortFlag
+	os Tcs Setlam $INS(WLEN.CWLEN)
+
+	# allow the user to adjust DIT and NDIT
+	lassign [os Dcs1 GetIntTime] dummy1 dit dummy2 ndit
+	lassign [os Uif AdjustDitNdit $dit $ndit] abort
+
+
+	if { $abort } { ::bob::bobAbort }
+	checkAbortFlag
+    }
+
+
+    #-----------------------------------------------------------------------
+    # CumOffset - return SEQ.CUMOFFSETX/Y values
+    #
+    protected method CumOffset { sumOffset } {
+	# accumulated position on the science detector
+	set py [format "%.3f" [expr {$sumOffset / $scidet_ysecpix}]]
+	return [list 0.0 $py]
+    }
+
+    #-----------------------------------------------------------------------
+    # variables
+    #
+    protected variable scidet_ysecpix 
+}
+
+
+#
+#___oOo___
+

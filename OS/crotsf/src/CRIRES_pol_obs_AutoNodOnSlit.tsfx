@@ -1,0 +1,62 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# E.S.O. - VLT project
+#
+#
+# who       when        what
+# --------  ----------  -------------------------------------------------------
+# tmarquar  2018-11-29  created, based on CRIRES_spec_obs_AutoNodOnSlit.tsfx
+#
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   NAME
+#   CRIRES_pol_obs_AutoNodOnSlit - Spectropolarimetry
+#
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
+
+PAF.HDR.START;
+PAF.ID                  "$Id: CRIRES_pol_obs_AutoNodOnSlit.tsfx $"
+PAF.DESC                "Nodding along slit using jitter";
+PAF.CRTE.NAME           "tmarquar";
+PAF.CRTE.DAYTIM         "29-Nov-2018";
+PAF.LCHG.NAME           "tmarquar";                # Who made last change
+PAF.LCHG.DAYTIM         "2018-11-29 12:00";        # Date and time of last change 
+PAF.HDR.END;
+ 
+#------------------------------------------------------------------------
+#
+PAF.INCLUDE             "crotsfTPL.tsfx";
+TPL.REFSUP              "CRIRES_spec_obs.ref";
+TPL.PRESEQ              "CRIRES_pol_obs_AutoNodOnSlit.seq";
+TPL.TYPE                "science";
+TPL.MODE                "Spectroscopy";
+
+#------------------------------------------------------------------------
+#
+PAF.INCLUDE             "crotsfDPR_CATG.tsfx";
+PAF.INCLUDE             "crotsfDPR_TECH.tsfx";
+PAF.INCLUDE             "crotsfDPR_TYPE.tsfx";
+DPR.CATG.RANGE		    "SCIENCE TEST";
+DPR.CATG.DEFAULT	    "SCIENCE";
+DPR.TECH.VALUE          "SPECTRUM";
+DPR.TYPE.VALUE          "OBJECT";
+
+#------------------------------------------------------------------------
+#
+PAF.INCLUDE		        "crotsfDET1_ITIME.tsfx";
+PAF.INCLUDE             "crotsfSEQ_NEXPO.tsfx";
+SEQ.NEXPO.LABEL		    "Number of exposures per nodding position";
+SEQ.NEXPO.MINIHELP	    "Number of exposures per nodding position per nodding cycle";
+PAF.INCLUDE		        "crotsfINS_OPTI1.tsfx";
+PAF.INCLUDE		        "crotsfINS_WLEN_REF.tsfx";
+PAF.INCLUDE             "crotsfSEQ_NODDING.tsfx";
+PAF.INCLUDE		        "crotsfSEQ_POISSON.tsfx";
+PAF.INCLUDE		        "crotsfSEQ_RETURN.tsfx";
+PAF.INCLUDE		        "crotsfSEQ_NOD_DELAY.tsfx";
+PAF.INCLUDE		        "crotsfSEQ_FLUX_TOLERANCE.tsfx";
+PAF.INCLUDE		        "crotsfDET1_NCORRS_NAME.tsfx";
+
+PAF.INCLUDE             "crotsfINS_POL.tsfx"
+
+#
+#___oOo___
+
+

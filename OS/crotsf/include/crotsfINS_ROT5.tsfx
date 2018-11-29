@@ -14,10 +14,10 @@
 
 TPL.PARAM               "INS.ROT5.NAME";
 INS.ROT5.NAME.TYPE       "keyword";
-INS.ROT5.NAME.RANGE      "0 42 84 126";
+INS.ROT5.NAME.RANGE      "HK_circular HK_linear YJ_linear YJ_circular";
 INS.ROT5.NAME.DEFAULT    "0";
-INS.ROT5.NAME.LABEL      "Polarimeter turret rotation angle";
-INS.ROT5.NAME.MINIHELP   "Polarimeter turret rotation, values: 0 42 84 126";
+INS.ROT5.NAME.LABEL      "Polarimeter choice";
+INS.ROT5.NAME.MINIHELP   "Polarimeter choice: HK or YJ bands, linear or circular";
 
 #
 #___oOo___

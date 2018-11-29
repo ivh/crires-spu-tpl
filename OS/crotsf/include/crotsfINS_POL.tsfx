@@ -1,0 +1,22 @@
+#******************************************************************************
+# E.S.O. - VLT project
+#
+# who       when        what
+# --------  ----------  -------------------------------------------------------
+# marquart  2018-11-28  Created
+#
+#******************************************************************************
+#   NAME
+#   crotsfINS_POL - Include other tsfx for SPU
+#    
+#------------------------------------------------------------------------------
+
+PAF.INCLUDE  "crotsfINS_ROT1.tsfx";
+PAF.INCLUDE  "crotsfINS_ROT2.tsfx";
+PAF.INCLUDE  "crotsfINS_ROT3.tsfx";
+PAF.INCLUDE  "crotsfINS_ROT4.tsfx";
+PAF.INCLUDE  "crotsfINS_ROT5.tsfx";
+
+
+#
+#___oOo___

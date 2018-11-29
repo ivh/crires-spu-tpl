@@ -13,11 +13,11 @@
 
 
 TPL.PARAM               "INS.ROT5.NAME";
-INS.SLIT1.NAME.TYPE       "keyword";
-INS.SLIT1.NAME.RANGE      "0 42 84 126";
-INS.SLIT1.NAME.DEFAULT    "0";
-INS.SLIT1.NAME.LABEL      "Polarimeter turret rotation";
-INS.SLIT1.NAME.MINIHELP   "Polarimeter turret rotation, values: 0 42 84 126";
+INS.ROT5.NAME.TYPE       "keyword";
+INS.ROT5.NAME.RANGE      "0 42 84 126";
+INS.ROT5.NAME.DEFAULT    "0";
+INS.ROT5.NAME.LABEL      "Polarimeter turret rotation angle";
+INS.ROT5.NAME.MINIHELP   "Polarimeter turret rotation, values: 0 42 84 126";
 
 #
 #___oOo___

@@ -7,7 +7,7 @@
 #
 #******************************************************************************
 #   NAME
-#   crotsfINS_ROT4 - Circular HK polarimeter rotation
+#   crotsfINS_ROT4 - Circular YJ polarimeter rotation
 #
 #------------------------------------------------------------------------------
 
@@ -16,8 +16,8 @@ TPL.PARAM               "INS.ROT4.NAME";
 INS.ROT4.NAME.TYPE       "number";
 INS.ROT4.NAME.RANGE      "-720..720";
 INS.ROT4.NAME.DEFAULT    "0";
-INS.ROT4.NAME.LABEL      "Circular HK polarimeter rotation";
-INS.ROT4.NAME.MINIHELP   "Circular HK polarimeter rotation angle";
+INS.ROT4.NAME.LABEL      "Circular YJ polarimeter rotation";
+INS.ROT4.NAME.MINIHELP   "Circular YJ polarimeter rotation angle";
 
 #
 #___oOo___

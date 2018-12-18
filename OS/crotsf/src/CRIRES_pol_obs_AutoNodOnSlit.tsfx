@@ -47,14 +47,14 @@ SEQ.NEXPO.LABEL		    "Number of exposures per nodding position";
 SEQ.NEXPO.MINIHELP	    "Number of exposures per nodding position per nodding cycle";
 PAF.INCLUDE		        "crotsfINS_OPTI1.tsfx";
 PAF.INCLUDE		        "crotsfINS_WLEN_REF.tsfx";
-PAF.INCLUDE             "crotsfSEQ_NODDING.tsfx";
 PAF.INCLUDE		        "crotsfSEQ_POISSON.tsfx";
 PAF.INCLUDE		        "crotsfSEQ_RETURN.tsfx";
 PAF.INCLUDE		        "crotsfSEQ_NOD_DELAY.tsfx";
 PAF.INCLUDE		        "crotsfSEQ_FLUX_TOLERANCE.tsfx";
 PAF.INCLUDE		        "crotsfDET1_NCORRS_NAME.tsfx";
 
-PAF.INCLUDE             "crotsfINS_POL.tsfx"
+# only include this instead of _NODDING because we don't need nodthrow or jitter
+PAF.INCLUDE             "crotsfSEQ_NABCYCLES.tsfx";
 
 #
 #___oOo___

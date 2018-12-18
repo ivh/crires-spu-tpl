@@ -1,7 +1,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # E.S.O. - VLT project
 #
-# "@(#) $Id: CRIRES_spec_obs_AutoNodOnSlit.seq 315705 2018-11-07 16:16:04Z ccumani $"
+# "@(#) $Id: CRIRES_pol_obs_AutoNodOnSlit.seq 315705 2018-11-07 16:16:04Z ccumani $"
 #
 # who       when        what
 # --------  ----------  -------------------------------------------------------
@@ -38,10 +38,10 @@
 #
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-proc CRIRES_spec_obs_AutoNodOnSlit { } {
+proc CRIRES_pol_obs_AutoNodOnSlit { } {
 
     tplNew croseqOS os
-    croseqTPL_AUTONODONSLIT tpl
+    croseqTPL_POLNOD tpl
 
     tpl Execute
 
@@ -54,9 +54,277 @@ proc CRIRES_spec_obs_AutoNodOnSlit { } {
 #
 global croseqClass
 catch { delete class $croseqClass }
-set croseqClass "croseqTPL_AUTONODONSLIT"
-class croseqTPL_AUTONODONSLIT {
-    inherit croseqTPL_NODONSLIT
+set croseqClass "croseqTPL_POLNOD"
+class croseqTPL_POLNOD {
+
+    #-----------------------------------------------------------------------
+    # Execute template
+    #
+    public method Execute {} {
+	seeBobVars
+
+	# execute main part of the template
+	Begin
+	tplTry {
+	    Main
+	} {
+	    # return to initial target position
+            Cleanup $SEQ(RETURN)
+	    # wait for all exposures to be archived properly
+	    if { $expsDone } { os Wait "-all" }
+	}
+    }
+
+
+    #-----------------------------------------------------------------------
+    # Main - Main template proc
+    #
+    protected method Main {} {
+	seeBobVars
+
+	set nAB          $SEQ(NABCYCLES)
+	# number of exposures per offset position
+	set nexpo        $SEQ(NEXPO)
+	set nodThrow     $SEQ(NODTHROW)
+	set jitWidth     $SEQ(JITTER.WIDTH)
+	set jitReset     "F"
+	if { [info exists SEQ(JITTER.RESET)] } {
+	    set jitReset $SEQ(JITTER.RESET)
+	}
+	set nodDelay     $SEQ(NOD.DELAY)
+
+	# total number of exposures
+	set TPL(NEXP) [expr {$nexpo * $nAB * 2 * $numOuterLoop}]
+
+	# set DPR.TECH according to spec.
+	set tech "SPECTRUM"
+	if { $DPR(TYPE) == "WAVE" } {
+	    set tech "SPECTRUM,NODDING"
+	    if { $nodThrow == 0 || $nAB == 0  } {set tech "SPECTRUM,DIRECT"  }
+	} elseif { $nAB == 0 } {
+	    set tech "SPECTRUM,DIRECT,OTHER"
+	} else {
+	    if { $nodThrow == 0 && $jitWidth == 0 } {set tech "SPECTRUM,DIRECT,OTHER"}
+	    if { $nodThrow == 0 && $jitWidth >  0 } {set tech "SPECTRUM,DIRECT,JITTER"}
+	    if { $nodThrow >  0 && $jitWidth == 0 } {set tech "SPECTRUM,NODDING,OTHER"}
+	    if { $nodThrow >  0 && $jitWidth >  0 } {set tech "SPECTRUM,NODDING,JITTER"}
+	}
+	set DPR(TECH) $tech
+
+	#---------------------------------------------------------------
+	# Random jitter values
+	#
+	if { $nAB > 0 } {
+	    # number of needed random values
+	    set njits $nAB
+	    if { ! $jitReset } {
+		set njits [expr {$njits * $numOuterLoop}]
+	    }
+	    set a [expr {abs($jitWidth) / 2.0}]
+	    if { $a != 0.0 } {
+	        set jits1 [exec croseqPoisson -r "-$a $a -$a $a" -n $njits -h $SEQ(POISSON) -f]
+		# take only the x values, i.e. each 2. value
+		set jits ""
+		foreach {x y} $jits1 {
+		    lappend jits $x
+		}
+	    } else {
+	    	set jits [replicate "0 " $njits]
+	    }
+
+	    # tplLog the values
+	    set i 0
+	    tplLog "Jitter values:" black 1 LightGreen
+	    foreach jit $jits {
+		set msg "[format %3d [incr i]]:   [format %.3f $jit]"
+		tplLog $msg
+	    }
+	}
+
+	#---------------------------------------------------------------
+	# Generate sequence list (list of tokens)
+	#
+	# Tokens:
+	#   "S"   start
+	#   "A"   position ('Object')
+	#   "B"   position ('Sky')
+	#   "J"   jitter value
+	#   "P"   positive nod throw
+	#   "N"   negative nod throw
+	#
+
+	# start: step half throw "P"
+	set seqL "S"
+
+	# generate sequence list (list of tokens)
+	loop i 0 $nAB {
+	    append seqL [expr {$i % 2 == 0 ? "AJNB" : "BJPA"}]
+	}
+
+	# if mode staring: at least 1 exposure (Object)
+	if { $nAB == 0 } {
+	    set TPL(NEXP) $nexpo
+	    set seqL "A"
+	} 
+
+	#---------------------------------------------------------------
+	# Outer loop
+	#
+	set insMode "INS.MODE $TPL(MODE)"
+
+	set jit  0;  # current jitter value
+	set jit0 0;  # previous jitter value
+	set j -1;    # index to jitter list
+
+	loop k 0 $numOuterLoop {
+
+	    OuterLoopBegin $k
+
+	    #------------------------------------------------------------------------
+	    # Inner loop: sequence of jittered cycle measurements
+	    #
+	    if { $jitReset } {
+		tplLog "Jitter reset"
+		set jit  0
+		set jit0 0
+		set j -1
+	    }
+	    loop i 0 [string length $seqL] {
+		checkAbortFlag
+
+		# current token from sequence string
+		set tok [string index $seqL $i]
+	
+		#--------------------------------------------------------------------
+		# For exposures add FITS keys
+		#
+		if { "$tok" == "A" || "$tok" == "B" } {
+
+	    	    lassign [CumOffset $sumOffset_] px py
+		    set fits "\
+			SEQ.POISSON      $SEQ(POISSON) \
+			SEQ.JITTER.WIDTH $SEQ(JITTER.WIDTH) \
+			SEQ.NODTHROW     $nodThrow \
+			SEQ.NABCYCLES    $nAB \
+			SEQ.JITTERVAL    $jit \
+			SEQ.CUMOFFSETX   $px \
+			SEQ.CUMOFFSETY   $py \
+			SEQ.NODPOS       $tok"
+		}
+
+		#--------------------------------------------------------------------
+		# The current token determines the action
+		#
+		switch $tok {
+		    "A" {
+			Expose $tok $nexpo $fits
+		    }
+
+		    "B" {
+			Expose $tok $nexpo $fits
+		    }
+
+		    "J" {
+			# get next jitter value (keeping the previous one in jit0)
+			set jit0 $jit
+			set jit [lindex $jits [incr j]]
+
+			set msg "Jitter offset ([expr {$j+1}] of $njits): [format %.3f $jit]"
+			tplLog $msg black 1 LightGreen
+		    }
+
+		    "P" {
+			# positive jitter (combined offset)
+			OffsetAlongSlit $tok [expr {$nodThrow + $jit - $jit0}]
+			# nodding delay
+			os Uif Sleep $nodDelay
+		    }
+
+		    "N" {
+			# negative jitter (combined offset back)
+			OffsetAlongSlit $tok [expr {0.0 - $nodThrow + $jit - $jit0}]
+			# nodding delay
+			os Uif Sleep $nodDelay
+		    }
+
+		    "S" {
+			OffsetAlongSlit $tok [expr {$nodThrow / 2.0}]
+			# nodding delay
+			os Uif Sleep $nodDelay
+		    }
+
+		    default {
+			error "Unknown token '$tok'"
+		    }
+		}
+	    }
+
+	    # move back to the origin before starting next loop
+	    if { ($k+1) < $numOuterLoop } {
+	    	Cleanup "T"
+	    }
+	}
+    }
+
+
+    #-----------------------------------------------------------------------
+    # OffsetAlongSlit - combined offset along the slit
+    #
+    protected method OffsetAlongSlit { tok offset } {
+	if { $offset == 0 } {return}
+
+	#= 1. convert offset along the slit in Alpha,Delta offset
+	tplLog "Offsetting along the slit ...: [format %.3f $offset] (arcsec)"
+	set angleOnSky [os GetAngleOnSky]
+	set angleOnSky [expr {$angleOnSky * atan(1) / 45.0}]
+	set da [expr {-1.0 * $offset * sin($angleOnSky)}]
+	set dd [expr {-1.0 * $offset * cos($angleOnSky)}]
+	if { abs($da) < 0.0001 } { set da 0.0 }
+	if { abs($dd) < 0.0001 } { set dd 0.0 }
+
+	#= 2. perform offset
+	os Offsadg $da $dd
+
+	#= 4. update accumulated offset
+	tplIncr sumOffset_ $offset
+    }
+
+
+    #-----------------------------------------------------------------------
+    # Expose - run nrep exposures
+    #
+    protected method Expose { tok nrep fits } {
+	seeBobVars
+	tplLog "Position $tok ..." blue 0 LightYellow
+
+	# foreach nexpo exposures:
+	loop i 0 $nrep {
+	    if { $expsDone } { os Wait "-all" }
+	    tplLog ""
+	    checkAbortFlag
+	    os Setup "-function INS.MODE $TPL(MODE) OCS.DET1.IMGNAME [os ImgName]"
+	    os AddFits $fits
+	    os Start
+	    set expsDone 1
+	    os Wait "-cond CanStartNextObs"
+	}
+    }
+
+
+    #-----------------------------------------------------------------------
+    # Cleanup - cleanup before returning from template
+    #
+    protected method Cleanup { ret } {
+
+	# if disabled by user: do nothing
+	if { ! $ret } {return}
+
+	# go back to initial position
+	OffsetAlongSlit "C" [expr {0.0 - $sumOffset_}]
+	set sumOffset_ 0.0
+    }
+
+
 
     #-----------------------------------------------------------------------
     # constructor
@@ -64,6 +332,8 @@ class croseqTPL_AUTONODONSLIT {
     constructor {} {
     	set scidet_ysecpix [os Cfg1 Get INS.SCIDET.YSECPIX]
     }
+
+    ## included TCL-file ended here.
 
     #-----------------------------------------------------------------------
     # Begin
@@ -139,6 +409,10 @@ class croseqTPL_AUTONODONSLIT {
     # variables
     #
     protected variable scidet_ysecpix 
+    protected variable numOuterLoop 1
+    protected variable sumOffset_ 0.0
+    protected variable expsDone 0
+}
 }
 
 

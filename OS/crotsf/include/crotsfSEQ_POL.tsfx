@@ -1,0 +1,26 @@
+#******************************************************************************
+# E.S.O. - VLT project
+#
+# "@(#) $Id: crotsfSEQ_POL.tsfx 181465 2009-03-09 17:20:54Z rschmutz $"
+#
+# who       when      what
+# --------  --------  ----------------------------------------------
+# tmarquar  2018-12-18  created
+#
+
+#************************************************************************
+#   NAME
+#   crotsfSEQ_POL - Linear polarization, offset angle on sky
+#    
+#------------------------------------------------------------------------
+#
+
+TPL.PARAM               "SEQ.LINPOLANGLE";
+SEQ.LINPOLANGLE.TYPE       "number";
+SEQ.LINPOLANGLE.RANGE      "0..360";
+SEQ.LINPOLANGLE.DEFAULT    "0";
+SEQ.LINPOLANGLE.LABEL      "Offset angle on sky (lin-pol)";
+SEQ.LINPOLANGLE.MINIHELP   "Offset angle on sky for linear polarization";
+ 
+#
+#___oOo___

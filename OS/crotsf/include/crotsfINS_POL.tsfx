@@ -12,11 +12,11 @@
 #------------------------------------------------------------------------------
 
 TPL.PARAM               "INS.POL.NAME";
-INS.OPTI1.NAME.TYPE     "keyword";
-INS.OPTI1.NAME.RANGE    "LINEAR CIRCULAR";
-INS.OPTI1.NAME.DEFAULT  "CIRCULAR";
-INS.OPTI1.NAME.LABEL    "Polarization state";
-INS.OPTI1.NAME.MINIHELP "Polarization state, linear or circular";
+INS.POL.NAME.TYPE     "keyword";
+INS.POL.NAME.RANGE    "LINEAR CIRCULAR";
+INS.POL.NAME.DEFAULT  "CIRCULAR";
+INS.POL.NAME.LABEL    "Polarization state";
+INS.POL.NAME.MINIHELP "Polarization state, linear or circular";
 
 
 #

@@ -9,7 +9,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #   NAME
 #   CRIRES_pol_obs_AutoNodOnSlit - Spectropolarimetry
-# 
+#
 #   DESCRIPTION
 #   ..
 #
@@ -94,9 +94,11 @@ class croseqTPL_POLNOD {
 	set nodDelay     $SEQ(NOD.DELAY)
 
 	# total number of exposures
+  # [TODO] in polarimetry mode, NEXP is multiplied by 4 (beam-switching)?
 	set TPL(NEXP) [expr {$nexpo * $nAB * 2 * $numOuterLoop}]
 
 	# set DPR.TECH according to spec.
+  # [TODO] clean the if loop: remove the jitter modes
 	set tech "SPECTRUM"
 	if { $DPR(TYPE) == "WAVE" } {
 	    set tech "SPECTRUM,NODDING"
@@ -113,7 +115,7 @@ class croseqTPL_POLNOD {
 
 	#---------------------------------------------------------------
 	# Random jitter values
-	#
+	# [TODO]: delete all this shit (jitter)
 	if { $nAB > 0 } {
 	    # number of needed random values
 	    set njits $nAB
@@ -144,6 +146,7 @@ class croseqTPL_POLNOD {
 	#---------------------------------------------------------------
 	# Generate sequence list (list of tokens)
 	#
+  # [TODO: remove J]
 	# Tokens:
 	#   "S"   start
 	#   "A"   position ('Object')
@@ -165,11 +168,12 @@ class croseqTPL_POLNOD {
 	if { $nAB == 0 } {
 	    set TPL(NEXP) $nexpo
 	    set seqL "A"
-	} 
+	}
 
 	#---------------------------------------------------------------
 	# Outer loop
 	#
+  # [TODO]: remove all the jitter
 	set insMode "INS.MODE $TPL(MODE)"
 
 	set jit  0;  # current jitter value
@@ -194,10 +198,11 @@ class croseqTPL_POLNOD {
 
 		# current token from sequence string
 		set tok [string index $seqL $i]
-	
+
 		#--------------------------------------------------------------------
 		# For exposures add FITS keys
 		#
+    # [TODO]: we might not need POISSON at all here: I think it's generating random number for jitter offset
 		if { "$tok" == "A" || "$tok" == "B" } {
 
 	    	    lassign [CumOffset $sumOffset_] px py
@@ -217,14 +222,18 @@ class croseqTPL_POLNOD {
 		#
 		switch $tok {
 		    "A" {
+        # [TODO] if in A pos: expose 4 times with different beam-splitter positions in circular
+        " in linear: keep tracking at the same time"
 			Expose $tok $nexpo $fits
 		    }
 
 		    "B" {
+        # [TODO]: same than A
 			Expose $tok $nexpo $fits
 		    }
 
 		    "J" {
+        # [TODO]: remove
 			# get next jitter value (keeping the previous one in jit0)
 			set jit0 $jit
 			set jit [lindex $jits [incr j]]
@@ -408,7 +417,8 @@ class croseqTPL_POLNOD {
     #-----------------------------------------------------------------------
     # variables
     #
-    protected variable scidet_ysecpix 
+    protected variable scidet_ysecpix
+    # [TODO] numOuterLoop: this is jitter: remove
     protected variable numOuterLoop 1
     protected variable sumOffset_ 0.0
     protected variable expsDone 0
@@ -418,4 +428,3 @@ class croseqTPL_POLNOD {
 
 #
 #___oOo___
-

@@ -105,35 +105,6 @@ class croseqTPL_POLNOD {
 	}
 	set DPR(TECH) $tech
 
-	#---------------------------------------------------------------
-	# Random jitter values
-	# [TODO]: delete all this shit (jitter)
-	if { $nAB > 0 } {
-	    # number of needed random values
-	    set njits $nAB
-	    if { ! $jitReset } {
-		set njits [expr {$njits * $numOuterLoop}]
-	    }
-	    set a [expr {abs($jitWidth) / 2.0}]
-	    if { $a != 0.0 } {
-	        set jits1 [exec croseqPoisson -r "-$a $a -$a $a" -n $njits -h $SEQ(POISSON) -f]
-		# take only the x values, i.e. each 2. value
-		set jits ""
-		foreach {x y} $jits1 {
-		    lappend jits $x
-		}
-	    } else {
-	    	set jits [replicate "0 " $njits]
-	    }
-
-	    # tplLog the values
-	    set i 0
-	    tplLog "Jitter values:" black 1 LightGreen
-	    foreach jit $jits {
-		set msg "[format %3d [incr i]]:   [format %.3f $jit]"
-		tplLog $msg
-	    }
-	}
 
 	#---------------------------------------------------------------
 	# Generate sequence list (list of tokens)

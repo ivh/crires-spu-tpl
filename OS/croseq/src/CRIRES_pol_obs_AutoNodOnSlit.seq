@@ -150,10 +150,8 @@ class croseqTPL_POLNOD {
 	    lassign [CumOffset $sumOffset_] px py
 	    set fits "\
 			SEQ.POISSON      $SEQ(POISSON) \
-			SEQ.JITTER.WIDTH $SEQ(JITTER.WIDTH) \
 			SEQ.NODTHROW     $nodThrow \
 			SEQ.NABCYCLES    $nAB \
-			SEQ.JITTERVAL    $jit \
 			SEQ.CUMOFFSETX   $px \
 			SEQ.CUMOFFSETY   $py \
 			SEQ.NODPOS       $tok"
@@ -174,26 +172,16 @@ class croseqTPL_POLNOD {
 			Expose $tok $nexpo $fits
 		    }
 
-		    "J" {
-        # [TODO]: remove
-			# get next jitter value (keeping the previous one in jit0)
-			set jit0 $jit
-			set jit [lindex $jits [incr j]]
-
-			set msg "Jitter offset ([expr {$j+1}] of $njits): [format %.3f $jit]"
-			tplLog $msg black 1 LightGreen
-		    }
-
 		    "P" {
-			# positive jitter (combined offset)
-			OffsetAlongSlit $tok [expr {$nodThrow + $jit - $jit0}]
+			# positive nod throw (combined offset)
+			OffsetAlongSlit $tok [$nodThrow]
 			# nodding delay
 			os Uif Sleep $nodDelay
 		    }
 
 		    "N" {
-			# negative jitter (combined offset back)
-			OffsetAlongSlit $tok [expr {0.0 - $nodThrow + $jit - $jit0}]
+			# negative nod throw (combined offset back)
+			OffsetAlongSlit $tok [expr {0.0 - $nodThrow}]
 			# nodding delay
 			os Uif Sleep $nodDelay
 		    }
@@ -211,9 +199,6 @@ class croseqTPL_POLNOD {
 	    }
 
 	    # move back to the origin before starting next loop
-	    if { ($k+1) < $numOuterLoop } {
-	    	Cleanup "T"
-	    }
     } # end method main
 
 
@@ -359,8 +344,6 @@ class croseqTPL_POLNOD {
     # variables
     #
     protected variable scidet_ysecpix
-    # [TODO] numOuterLoop: this is jitter: remove
-    protected variable numOuterLoop 1
     protected variable sumOffset_ 0.0
     protected variable expsDone 0
 }

@@ -109,12 +109,10 @@ class croseqTPL_POLNOD {
 	#---------------------------------------------------------------
 	# Generate sequence list (list of tokens)
 	#
-  # [TODO: remove J]
 	# Tokens:
 	#   "S"   start
 	#   "A"   position ('Object')
 	#   "B"   position ('Sky')
-	#   "J"   jitter value
 	#   "P"   positive nod throw
 	#   "N"   negative nod throw
 	#
@@ -124,38 +122,21 @@ class croseqTPL_POLNOD {
 
 	# generate sequence list (list of tokens)
 	loop i 0 $nAB {
-	    append seqL [expr {$i % 2 == 0 ? "AJNB" : "BJPA"}]
+	    append seqL [expr {$i % 2 == 0 ? "ANB" : "BPA"}]
 	}
 
 	# if mode staring: at least 1 exposure (Object)
 	if { $nAB == 0 } {
-	    set TPL(NEXP) $nexpo
+	    set TPL(NEXP) expr {$nexpo * 4}
 	    set seqL "A"
 	}
 
 	#---------------------------------------------------------------
-	# Outer loop
 	#
-  # [TODO]: remove all the jitter
 	set insMode "INS.MODE $TPL(MODE)"
 
-	set jit  0;  # current jitter value
-	set jit0 0;  # previous jitter value
-	set j -1;    # index to jitter list
 
-
-
-
-	    #------------------------------------------------------------------------
-	    # Inner loop: sequence of jittered cycle measurements
-	    #
-	    if { $jitReset } {
-		tplLog "Jitter reset"
-		set jit  0
-		set jit0 0
-		set j -1
-	    }
-	    loop i 0 [string length $seqL] {
+  loop i 0 [string length $seqL] {
 		checkAbortFlag
 
 		# current token from sequence string
@@ -164,11 +145,10 @@ class croseqTPL_POLNOD {
 		#--------------------------------------------------------------------
 		# For exposures add FITS keys
 		#
-    # [TODO]: we might not need POISSON at all here: I think it's generating random number for jitter offset
 		if { "$tok" == "A" || "$tok" == "B" } {
 
-	    	    lassign [CumOffset $sumOffset_] px py
-		    set fits "\
+	    lassign [CumOffset $sumOffset_] px py
+	    set fits "\
 			SEQ.POISSON      $SEQ(POISSON) \
 			SEQ.JITTER.WIDTH $SEQ(JITTER.WIDTH) \
 			SEQ.NODTHROW     $nodThrow \
@@ -184,7 +164,7 @@ class croseqTPL_POLNOD {
 		#
 		switch $tok {
 		    "A" {
-        # [TODO] if in A pos: expose 4 times with different beam-splitter positions in circular
+        # [TODO] DECKER, if in A pos: expose 4 times with different beam-splitter positions in circular
         " in linear: keep tracking at the same time"
 			Expose $tok $nexpo $fits
 		    }

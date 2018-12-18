@@ -8,11 +8,14 @@
 !OS/crotsf/
 !OS/crotsf/src/
 !OS/crotsf/src/CRIRES_pol_obs_AutoNodOnSlit.tsfx
+!OS/crotsf/src/CRIRES_pol_acq_NGS.tsfx
 !OS/crotsf/include/
 !OS/crotsf/include/crotsfINS_ROT*
 !OS/crotsf/include/crotsfINS_OPTI1.tsfx
 !OS/crotsf/include/crotsfINS_POL.tsfx
+!OS/crotsf/include/crotsfSEQ_POL.tsfx
 
 !OS/croseq/
 !OS/croseq/src/
 !OS/croseq/src/CRIRES_pol_obs_AutoNodOnSlit.seq
+!OS/croseq/src/CRIRES_pol_acq_NGS.seq

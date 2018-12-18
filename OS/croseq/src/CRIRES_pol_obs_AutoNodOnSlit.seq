@@ -86,16 +86,11 @@ class croseqTPL_POLNOD {
 	# number of exposures per offset position
 	set nexpo        $SEQ(NEXPO)
 	set nodThrow     $SEQ(NODTHROW)
-	set jitWidth     $SEQ(JITTER.WIDTH)
-	set jitReset     "F"
-	if { [info exists SEQ(JITTER.RESET)] } {
-	    set jitReset $SEQ(JITTER.RESET)
-	}
 	set nodDelay     $SEQ(NOD.DELAY)
 
 	# total number of exposures
   # [TODO] in polarimetry mode, NEXP is multiplied by 4 (beam-switching)?
-	set TPL(NEXP) [expr {$nexpo * $nAB * 2 * $numOuterLoop}]
+	set TPL(NEXP) [expr {$nexpo * $nAB * 2 * 4 * }]
 
 	# set DPR.TECH according to spec.
   # [TODO] clean the if loop: remove the jitter modes
@@ -180,9 +175,8 @@ class croseqTPL_POLNOD {
 	set jit0 0;  # previous jitter value
 	set j -1;    # index to jitter list
 
-	loop k 0 $numOuterLoop {
 
-	    OuterLoopBegin $k
+
 
 	    #------------------------------------------------------------------------
 	    # Inner loop: sequence of jittered cycle measurements

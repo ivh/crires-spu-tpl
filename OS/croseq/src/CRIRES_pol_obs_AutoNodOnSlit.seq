@@ -89,7 +89,6 @@ class croseqTPL_POLNOD {
 	set nodDelay     $SEQ(NOD.DELAY)
 
 	# total number of exposures
-  # [TODO] in polarimetry mode, NEXP is multiplied by 4 (beam-switching)?
 	set TPL(NEXP) [expr {$nexpo * $nAB * 2 * 4 * }]
 
 	# set DPR.TECH according to spec.
@@ -101,10 +100,8 @@ class croseqTPL_POLNOD {
 	} elseif { $nAB == 0 } {
 	    set tech "SPECTRUM,DIRECT,OTHER"
 	} else {
-	    if { $nodThrow == 0 && $jitWidth == 0 } {set tech "SPECTRUM,DIRECT,OTHER"}
-	    if { $nodThrow == 0 && $jitWidth >  0 } {set tech "SPECTRUM,DIRECT,JITTER"}
-	    if { $nodThrow >  0 && $jitWidth == 0 } {set tech "SPECTRUM,NODDING,OTHER"}
-	    if { $nodThrow >  0 && $jitWidth >  0 } {set tech "SPECTRUM,NODDING,JITTER"}
+	    if { $nodThrow == 0} {set tech "SPECTRUM,DIRECT,OTHER"}
+	    if { $nodThrow >  0} {set tech "SPECTRUM,NODDING,OTHER"}
 	}
 	set DPR(TECH) $tech
 
@@ -266,8 +263,7 @@ class croseqTPL_POLNOD {
 	    if { ($k+1) < $numOuterLoop } {
 	    	Cleanup "T"
 	    }
-	}
-    }
+    } # end method main
 
 
     #-----------------------------------------------------------------------

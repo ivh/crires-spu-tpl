@@ -11,11 +11,12 @@
 #    
 #------------------------------------------------------------------------------
 
-PAF.INCLUDE  "crotsfINS_ROT1.tsfx";
-PAF.INCLUDE  "crotsfINS_ROT2.tsfx";
-PAF.INCLUDE  "crotsfINS_ROT3.tsfx";
-PAF.INCLUDE  "crotsfINS_ROT4.tsfx";
-PAF.INCLUDE  "crotsfINS_ROT5.tsfx";
+TPL.PARAM               "INS.POL.NAME";
+INS.OPTI1.NAME.TYPE     "keyword";
+INS.OPTI1.NAME.RANGE    "LINEAR CIRCULAR";
+INS.OPTI1.NAME.DEFAULT  "CIRCULAR";
+INS.OPTI1.NAME.LABEL    "Polarization state";
+INS.OPTI1.NAME.MINIHELP "Polarization state, linear or circular";
 
 
 #

@@ -19,7 +19,7 @@
 
 TPL.PARAM               "INS.OPTI1.NAME";
 INS.OPTI1.NAME.TYPE     "keyword";
-INS.OPTI1.NAME.RANGE    "FREE GAS_N2O GAS_SGC GAS_VISITOR UNe IntSph SPU_lin SPU_cir";
+INS.OPTI1.NAME.RANGE    "FREE GAS_N2O GAS_SGC GAS_VISITOR UNe IntSph SPU";
 INS.OPTI1.NAME.DEFAULT  "FREE";
 INS.OPTI1.NAME.LABEL    "Calibration slider";
 INS.OPTI1.NAME.MINIHELP "Calibration slider with lamps & polarimeter";

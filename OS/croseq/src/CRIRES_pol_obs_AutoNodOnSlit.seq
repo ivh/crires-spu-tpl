@@ -88,11 +88,10 @@ class croseqTPL_POLNOD {
 	set nodThrow     $SEQ(NODTHROW)
 	set nodDelay     $SEQ(NOD.DELAY)
 
-	# total number of exposures
+	# total number of exposures: 2 exposures per AB cycles * n_exposures set by user * 4 polarimetric sub-exposures
 	set TPL(NEXP) [expr {$nexpo * $nAB * 2 * 4 * }]
 
 	# set DPR.TECH according to spec.
-  # [TODO] clean the if loop: remove the jitter modes
 	set tech "SPECTRUM"
 	if { $DPR(TYPE) == "WAVE" } {
 	    set tech "SPECTRUM,NODDING"
@@ -149,7 +148,6 @@ class croseqTPL_POLNOD {
 
 	    lassign [CumOffset $sumOffset_] px py
 	    set fits "\
-			SEQ.POISSON      $SEQ(POISSON) \
 			SEQ.NODTHROW     $nodThrow \
 			SEQ.NABCYCLES    $nAB \
 			SEQ.CUMOFFSETX   $px \

@@ -160,15 +160,30 @@ class croseqTPL_POLNOD {
 		#
 		switch $tok {
 		    "A" {
-        # [TODO] DECKER, if in A pos: expose 4 times with different beam-splitter positions in circular
-        " in linear: keep tracking at the same time"
-			Expose $tok $nexpo $fits
-		    }
+          loop i 0 $nexpo {
+            # [TODO] move the decker into the right position for A-pos nodding (maybe in acquisition template?)
+            # [TODO] set the right beamsplitter angle. if linear: set tracking, set derotator
+            Expose $tok 1 $fits
+            # [TODO] rotate beam-splitter +180 degrees
+            Expose $tok 1 $fits
+            Expose $tok 1 $fits
+            # [TODO] rotate -180 degrees
+            Expose $tok 1 $fits
+          } #end of nexpo loop
+		    } # end of "A" case loop
 
-		    "B" {
-        # [TODO]: same than A
-			Expose $tok $nexpo $fits
-		    }
+        "B" {
+          loop i 0 $nexpo {
+            # [TODO] move the decker into the right position for B-pos nodding (maybe in acquisition template?)
+            # [TODO] set the right beamsplitter angle. if linear: set tracking, set derotator
+            Expose $tok 1 $fits
+            # [TODO] rotate beam-splitter +180 degrees
+            Expose $tok 1 $fits
+            Expose $tok 1 $fits
+            # [TODO] rotate -180 degrees
+            Expose $tok 1 $fits
+          } #end of nexpo loop
+		    } # end of "B" case loop
 
 		    "P" {
 			# positive nod throw (combined offset)

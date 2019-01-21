@@ -161,7 +161,9 @@ class croseqTPL_POLNOD {
 		switch $tok {
 		    "A" {
           loop i 0 $nexpo {
-            # [TODO] move the decker into the right position for A-pos nodding (maybe in acquisition template?)
+            # move the decker into the right position for A-position nodding.
+            # [TODO] Verify if it is Pol1 or Pol2, Verify syntax
+            os Setup "-function INS.OPTI8.NAME Pol1"
             # [TODO] set the right beamsplitter angle. if linear: set tracking, set derotator
             Expose $tok 1 $fits
             # [TODO] rotate beam-splitter +180 degrees
@@ -174,7 +176,9 @@ class croseqTPL_POLNOD {
 
         "B" {
           loop i 0 $nexpo {
-            # [TODO] move the decker into the right position for B-pos nodding (maybe in acquisition template?)
+            # move the decker into the right position for B-pos nodding
+            [TODO] Verify if it is Pol1 or Pol2, Verify syntax
+            os Setup "-function INS.OPTI8.NAME Pol2"
             # [TODO] set the right beamsplitter angle. if linear: set tracking, set derotator
             Expose $tok 1 $fits
             # [TODO] rotate beam-splitter +180 degrees
@@ -270,6 +274,9 @@ class croseqTPL_POLNOD {
 	# go back to initial position
 	OffsetAlongSlit "C" [expr {0.0 - $sumOffset_}]
 	set sumOffset_ 0.0
+
+  # return decker to open position
+  os Setup "-function INS.OPTI8.NAME Open"
     }
 
 

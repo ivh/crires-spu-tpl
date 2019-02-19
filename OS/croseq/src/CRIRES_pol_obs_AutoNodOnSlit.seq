@@ -168,7 +168,7 @@ class croseqTPL_POLNOD {
       set polmode "YJL"
     }
     if { $wave == HK AND $pol = LIN} {
-      set polmode "YJL"
+      set polmode "HKL"
     }
 		#--------------------------------------------------------------------
 		# The current token determines the action

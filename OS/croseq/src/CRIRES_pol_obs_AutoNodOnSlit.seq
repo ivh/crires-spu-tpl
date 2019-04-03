@@ -403,8 +403,8 @@ class croseqTPL_POLNOD {
 	set carrg $INS(OPTI1.NAME)
 	# also center the target star while AO loop is suspended
 	os CenterTarget
-	os Setup "-file $TPL(REFSUP) -function \
-	    INS.MODE        $TPL(MODE) \
+	os Setup "-file $TPL(REFSUP)"
+	os Setup "-function INS.MODE $TPL(MODE) \
 	    INS1.OPTI1.NAME $carrg \
 	    INS.WLEN.CWLEN $INS(WLEN.CWLEN) \
 	    [os Dcs1 GetIntTime]"

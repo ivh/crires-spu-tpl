@@ -1,0 +1,78 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# E.S.O. - VLT project
+#
+# "@(#) $Id: CRIRES_spec_acq_NGS.tsfx 315653 2018-11-06 14:07:37Z ccumani $"
+#
+# who       when        what
+# --------  ----------  -------------------------------------------------------
+# nslusare  2009-06-07  PPRS-031577: P84 IP
+#                       ~ Removed 'DET1.NCORRS.NAME.HIDE   "OHS"'
+# nslusare  2009-05-29  PPRS-031568: New Detector Readout Mode
+#                       ~ Added 'crotsfDET1_NCORRS_NAME.tsfx'
+#                       ~ Added 'crotsfDET1_WIN_NY.tsfx'
+# rschmutz  2009-03-08  PPRS-30444: INS.OPTI1.NAME unhidden
+# rschmutz  2009-02-23  PPRS-39369: TPL.MODE=NGS
+# rschmutz  2009-02-18  PPRS-30444: INS.OPTI1.NAME parameter added (hidden).
+# rschmutz  2008-08-08  Adapted to CRIRES2.
+# rschmutz  2007-06-04  PPRS-23768: SEQ.FLUX.TOLERANC added.
+# rsc/asm   2006-11-29  DET1.NCORRS.NAME removed.
+# rsc/asm   2006-11-29  INS.WLEN.ID -> INS.WLEN.REF.
+# pbiereic  2006-11-10  Added: crotsfTEL_TARG_OFFSET.tsfx
+# epozna    2006-10-02  WLEN setting 
+#                       ~ Use crotsfINS_WLEN_ID instead of crotsfINS_WLEN_CONF
+# pbiereic  2006-07-05  Created
+#
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   NAME
+#   CRIRES_spec_acq_NGS - Natural Guide Star (NGS) acquisition
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+PAF.HDR.START;
+PAF.ID                  "$Id: CRIRES_spec_acq_NGS.tsfx 315653 2018-11-06 14:07:37Z ccumani $"
+PAF.DESC                "CRIRES NGS acquisition";
+PAF.CRTE.NAME           "pbiereic";
+PAF.CRTE.DAYTIM         "05-Jul-2006";
+PAF.LCHG.NAME           "rschmutz";                # Who made last change
+PAF.LCHG.DAYTIM         "2008-08-08T00:00:00";     # Date and time of last change 
+PAF.HDR.END;
+ 
+# -----------------------------------------------------------------------------
+
+PAF.INCLUDE             "crotsfTPL.tsfx";
+TPL.REFSUP              "CRIRES_spec_acq.ref";
+TPL.PRESEQ              "CRIRES_spec_acq.seq";
+TPL.TYPE                "acquisition";
+TPL.MODE                "NGS";			   # acq. mode: NGS or NoAO
+TPL.EXECTIME            "300";                     # Expected execution time (s)
+
+# ----------------------------------------------------------------------------- 
+
+PAF.INCLUDE             "crotsfDPR.tsfx";
+DPR.CATG.RANGE          "ACQUISITION TEST";
+DPR.CATG.DEFAULT        "ACQUISITION";
+DPR.TECH.VALUE          "IMAGE";
+DPR.TYPE.VALUE          "OBJECT";
+ 
+# ----------------------------------------------------------------------------- 
+
+PAF.INCLUDE		"crotsfTEL.tsfx";
+TEL.TARG.OFFSETALPHA.RANGE "-22.5..22.5";
+TEL.TARG.OFFSETDELTA.RANGE "-22.5..22.5";
+PAF.INCLUDE		"crotsfSEQ_NGS.tsfx";
+PAF.INCLUDE		"crotsfINS_WLEN_REF.tsfx";
+PAF.INCLUDE		"crotsfINS_SLIT.tsfx";
+PAF.INCLUDE		"crotsfINS_DROT.tsfx";
+PAF.INCLUDE		"crotsfINS_OPTI1.tsfx";
+PAF.INCLUDE		"crotsfSEQ_PRESET.tsfx";
+PAF.INCLUDE		"crotsfSEQ_SV_USELASTSKY.tsfx";
+PAF.INCLUDE		"crotsfSEQ_SV_GUIDE.tsfx";
+PAF.INCLUDE		"crotsfSEQ_FLUX_TOLERANCE.tsfx";
+PAF.INCLUDE		"crotsfSEQ_STEPS_EXEC.tsfx";
+PAF.INCLUDE		"crotsfDET1_NCORRS_NAME.tsfx";
+
+# ----------------------------------------------------------------------------- 
+#
+#___oOo___
+
+
+

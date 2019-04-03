@@ -1,0 +1,1137 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# E.S.O. - VLT project
+#
+# "@(#) $Id: CRIRES_spec_acq.seq 319691 2019-02-28 13:41:47Z ccumani $"
+#
+# who       when        what
+# --------  ----------  -----------------------------------------------------------------
+# nslusare  2012-01-02  CCB-0000056: CRIRES entrance slit (slit1) replacement
+#                       - Removed translation of INS.SLIT.WID
+# pbaksai   2011-10-10  PPRS-041919: Install P88 IP for CRIRES on OCT-01
+#                       - Translate INS.SLIT.WID 0.0 to 0.3
+#                       - Comment out CheckSlitPos
+# rschmutz  2011-08-22  PPRS-041281: if at=F and ag=T, then set tg=1
+# nslusare  2009-11-26  PPRS-031557: Slit position to be measured in the acq. templates
+#                       - Now method 'CheckSlitPos' is called with an argument
+# nslusare  2009-07-06  PPRS-031557: Slit position to be measured in the acq. templates
+#                       - Added call to method 'CheckSlitPos'
+# ikastine  2009-06-05  PPRS-031636: bug fix for ADDVELALPHA/DELTA
+# nslusare  2009-05-29  PPRS-031568: New Detector Readout Mode
+#                       - Added detector setup 'A' in the method 'Execute'
+# rschmutz  2009-03-07  PPRS-030372: differential tracking support added
+# rschmutz  2009-02-23  PPRS-030369: INS.MODE=Imaging, TPL.MODE=NGS or NoAO
+# rschmutz  2009-02-20  reset saved observing positions
+# rschmutz  2009-02-18  PPRS-030444: accept INS.OPTI1.NAME parameter.
+# rschmutz  2009-02-06  FEB09 tests: periodic refraction calls added.
+# rschmutz  2009-02-04  FEB09 tests: OCS.STAR.TARG.SVWLEN support added.
+# rschmutz  2009-01-26  PPRS-029920: OFFSAD,OFFSXY: call os methods.
+# rschmutz  2008-12-27  PSO-14200: star names adjusted.
+# rschmutz  2008-08-20  Code reorganized in steps.
+# mkiekebu  2008-02-22  CRIRES 2.0
+# rsc/asm   2007-10-16  PPRS-024583: TEL.TARG.OFFSETALPHA/DELTA=0 added.
+# rschmutz  2007-10-04  PPRS-021769: setupWlenConf adjusted to add INS.PRISM.WLEN
+# rsc/asm   2007-09-04  PPRS-024947: checks added.
+# pbaksai   2007-08-03  PPRS-024737: wlenSetup removed from insSetup 
+# rschmutz  2007-06-07  PPRS-023768: setupWlenConf added.
+# pbaksai   2007-04-25  PPRS-023557: DET1.SEQ1.DIT set to 1
+# rschmutz  2007-04-23  PPRS-022753: uif added.
+# pbaksai   2007-04-05  PPRS-023278: Added INS.DROT.POSANG setup
+# pbaksai   2007-04-05  PPRS-023188: enable refraction calc.
+# pbaksai   2007-04-01  PPRS-023188: disable refraction calc.
+# rschmutz  2007-03-01  PPRS-022739: disable refraction calc. during acq.
+# rschmutz  2007-02-03  PPRS-021770: register AO loop closed status.
+# rschmutz  2006-12-01  SEQ.NGS.ISSVGS support added.
+# rsc/asm   2006-11-29  DET1.NCORRS.NAME=FowlerNsamp
+# rsc/asm   2006-11-28  PPRS-021712: SEQ.SKYFLAT -> SEQ.SKY.
+# pbiereic  2006-11-06  - Added setup of DET1.NCORRS.NAME
+#                       - INS.SVFW.ESVFW T is set via CRIRES_spec_acq_STD.ref
+#                       - change by getWlenConfCheckChange is handled in getWlenConf
+#                       - OBD/TSF keywords shouldn't be modified (see BOB message)
+# epozna    2006-10-02  - Check current WLEN.ID before setting (see getWlenConfCheckChange)
+#                         and adjust Filter  if set via SVFW assembly) 
+#                       - Telescope (first) preset to AO star (NGS)
+# pbiereic  2006-07-05  Created
+#
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   NAME
+#       CRIRES_spec_acq - CRIRES acquisition template
+# 
+#   DESCRIPTION
+#	The acquisition is performed in several steps, described below.
+#
+#   SEE ALSO
+#	VLT-SPE-ESO-14500-3485
+#
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+proc CRIRES_spec_acq {} {
+
+    tplNew croseqOS os 
+    croseqTPL_ACQ tpl
+
+    tpl Init
+    # execute template and return target coordinates
+    return [tpl Execute]
+}
+
+
+#---------------------------------------------------------------------------
+# class croseqTPL_ACQ
+#
+global croseqClass
+catch { delete class $croseqClass }
+set croseqClass "croseqTPL_ACQ"
+class croseqTPL_ACQ {
+
+    #-----------------------------------------------------------------------
+    # Init. template: set steps to be executed
+    #
+    method Init {} {
+	seeBobVars
+	set steps [tplNew tplSTEPS steps]
+
+	#= 1. get parameters that specify what template steps to execute
+	#
+	# m)  Mode (NoAO, NGS)			- TPL.MODE
+	# g)  SV Guiding			- SEQ.SV.GUIDE=F/T
+	#     Target coordinates		- TEL.TARG.ALPHA/DELTA
+	# tg) Offset between target and SV star	- TEL.TARG.OFFSETALPHA/OFFSETDELTA
+	# at) AO star is target star		- SEQ.NGS.ISTARGET=F/T
+	# ag) AO star is SVGS			- SEQ.NGS.ISSVGS=F/T
+	#     AO star coordinates (if needed)
+	# df) differential tracking             - SEQ.TRACK.TARG != ""
+	#
+	set m  $TPL(MODE)
+	set g "T"
+	if { [info exists SEQ(SV.GUIDE)] } {
+	    set g  [expr {$SEQ(SV.GUIDE) ? "T":"F"}]
+	}
+	set at "F"
+	if { [info exists SEQ(NGS.ISTARGET)] } {
+	     set at [expr {$SEQ(NGS.ISTARGET) ? "T":"F"}]
+	}
+	set ag "F"
+	if { [info exists SEQ(NGS.ISSVGS)] } {
+	    set ag [expr {$SEQ(NGS.ISSVGS) ? "T":"F"}]
+	}
+	set tg 0
+	if { [info exists TEL(TARG.OFFSETALPHA)] } {
+	    set tg [expr {$TEL(TARG.OFFSETALPHA) != 0.0 || $TEL(TARG.OFFSETDELTA) != 0.0} ? 1 : 0]
+	}
+	# PPRS-41281: if NGS is not the target, but SVGS=AOS, then AOS is not the target
+	if { $at == "F" && $ag == "T" } {
+	    set tg 1
+	}
+	set df "F"
+	if { [info exists SEQ(TRACK.TARG)] } {
+	    set df "T";
+	}
+
+	# differential tracking:
+	if { $df } {
+	    # target is always different to the SVGS: set tg=1
+	    set tg 1
+	    # target is always different to the NGS:  set at=F
+	    set at "F"
+	    # NGS is always the SVGS: set ag=T
+	    set ag "T"
+	}
+
+	# check carriage position
+	if { ![info exists INS(OPTI1.NAME)] } {
+	    set INS(OPTI1.NAME) "FREE"
+	}
+	if { ![lcontain {"FREE" "GAS_N2O" "GAS_CO" "GAS_VISITOR"} $INS(OPTI1.NAME)] } {
+	    error "Carriage parameter is not FREE or gas-cell position: $INS(OPTI1.NAME)"
+	}
+
+	#= 2. determine case we are in
+	#
+	# A) m=NoAO,g=F, tg=0: 		1 star:  Target
+	# B) m=NoAO,g=F, tg!=0:		2 stars: Target, SVGS (Reference star)
+	# C) m=NoAO,g=T, tg=0 :		1 star:  Target=SVGS
+	# D) m=NoAO,g=T, tg!=0:		2 stars: Target, SVGS
+	#
+	# E1) m=NGS, g=F, tg=0, at=T|ag=T:  1 star:  Target=SVGS=AOS
+	# F1) m=NGS, g=F, tg=0, at=F,ag=F:  2 stars: Target=SVGS, AOS
+	# G1) m=NGS, g=F, tg!=0,at=T,ag=F:  2 stars: Target=AOS, SVGS
+	# H1) m=NGS, g=F, tg!=0,at=F,ag=T:  2 stars: Target, AOS=SVGS
+	# I1) m=NGS, g=F, tg!=0,at=F,ag=F:  3 stars: Target, SVGS, AOS
+	#
+	# E2) m=NGS, g=T, tg=0, at=T|ag=T:  1 star:  Target=SVGS=AOS
+	# F2) m=NGS, g=T, tg=0, at=F,ag=F:  2 stars: Target=SVGS, AOS
+	# G2) m=NGS, g=T, tg!=0,at=T,ag=F:  2 stars: Target=AOS, SVGS
+	# H2) m=NGS, g=T, tg!=0,at=F,ag=T:  2 stars: Target, AOS=SVGS
+	# I2) m=NGS, g=T, tg!=0,at=F,ag=F:  3 stars: Target, SVGS, AOS
+	#
+	# also set star labels according to current case
+	#
+	# Note: if differential tracking is used, then we are in one of the following cases:
+	# D)  m=NoAO,g=T, tg!=0:	    2 stars: Target, SVGS
+	# H1) m=NGS, g=F, tg!=0,at=F,ag=T:  2 stars: Target, AOS=SVGS
+	# H2) m=NGS, g=T, tg!=0,at=F,ag=T:  2 stars: Target, AOS=SVGS
+	#
+	if { $m == "NoAO" } {
+    	    set c [switch "$g|$tg" {
+		"F|0"   {format "A|||target star"}
+		"F|1"   {format "B||reference star|target star"}
+		"T|0"   {format "C||SVGS (=target star)|target star (=SVGS)"}
+		"T|1"   {format "D||SVGS|target star"}
+	    }]
+	} elseif { $m == "NGS" } {
+	    set c [switch "$tg|$at|$ag" {
+		"0|T|T" {format "E|AO star (=target star=SVGS)||target star (=AO star=SVGS)"}
+		"0|F|T" {format "E|AO star (=target star=SVGS)||target star (=AO star=SVGS)"}
+		"0|T|F" {format "E|AO star (=target star=SVGS)||target star (=AO star=SVGS)"}
+		"0|F|F" {format "F|AO star|SVGS (=target star)|target star (=SVGS)"}
+		"1|T|F" {format "G|AO star (=target star)|SVGS|target star (=AO star)"}
+		"1|F|T" {format "H|AO star (=SVGS)|SVGS (=AO star)|target star"}
+		"1|F|F" {format "I|AO star|SVGS|target star"}
+		"1|T|T" {format "J"}
+	    }]
+	    if { $c == "J" } {
+		error "Inconsistency: TEL.TARG.OFFSETALPHA/DELTA are not zero, but SVGS = NGS = Target Star."
+	    }
+	} else {
+    	    error "Unknown TPL.MODE = '$m'."
+	}
+	# extract case and star labels
+	lassign [split $c "|"] c ngsTxt svTxt targTxt
+
+	#= 3. create template steps according to current case
+	#
+	# Cases vs. steps	         | A| B| C| D| E| F| G| H| I|
+	# -----------------------------------------------------------
+	# 1.  Preset to AO star	         | -| -| -| -| x| x| x| x| x|
+	# 2.  Center AO star (popup)     | -| -| -| -| x| x| x| x| x|
+	# 3.  Close AO loop	         | -| -| -| -| x| x| x| x| x|
+	# 4.  Adjust AO star pos.        | -| -| -| -| x| x| x| x| x|
+	# 5.  Center AO star (popup)     | -| -| -| -| x| x| x| x| x|
+	# 6a. Preset to SVGS	         | -| x| x| x| -| -| -| -| -|
+	# 6b. Offset to SVGS	         | -| -| -| -| -| x| x| -| x|
+	# 7.  Center SVGS (popup)        | -| x| x| x| -| x| x| -| x|
+	# 8.  Start SV guiding	         | -| -| x| x| x| x| x| x| x| (only x2 cases)
+	# 9a. Preset to target star      | x| -| -| -| -| -| -| -| -|
+	# 9b. Offset to target star      | -| x| -| x| -| -| x| x| x| (or diff. tracking offset)
+	# 10. Center target star (popup) | x| x| x| x| x| x| x| x| x|
+	# 11. Adjust target star pos.    | x| x| x| x| x| x| x| x| x|
+	# 12. Take SV exposure           | x| x| x| x| x| x| x| x| x|
+	#
+    
+	# steps 1-5
+	if { [lcontain {E F G H I} $c] } {
+	    $steps AddProc "PAO"  "Preset to $ngsTxt"    "" [code $this Step_PAO]
+	    $steps AddProc "CAO"  "Center $ngsTxt"       "" [code $this Step_CAO]
+	    $steps AddProc "AOLP" "Close AO loop"        "" [code $this Step_AOLP]
+	    $steps AddProc "AAO"  "Adjust $ngsTxt pos."  "" [code $this Step_AAO]
+	    $steps AddProc "CAO2" "Center $ngsTxt"       "" [code $this Step_CAO]
+	}
+	# step 6a
+	if { [lcontain {B C D} $c] } {
+	    $steps AddProc "PGS"  "Preset to $svTxt"     "" [code $this Step_PGS]
+	}
+	# step 6b
+	if { [lcontain {F G I} $c] } {
+	    $steps AddProc "OGS"  "Offset to $svTxt"     "" [code $this Step_OGS]
+	}
+	# step 7
+	if { [lcontain {B C D F G I} $c] } {
+	    $steps AddProc "CGS"  "Center $svTxt"        "" [code $this Step_CGS]
+	}
+	# step 8 (execute when SV guiding enabled)
+	if { $g } {
+	    $steps AddProc "SG"   "Start SV guiding"     "" [code $this Step_SG]
+	}
+	# step 9a
+	if { $c == "A" } {
+	    $steps AddProc "PTS"  "Preset to $targTxt"   "" [code $this Step_PTS]
+	}
+	# step 9b
+	if { [lcontain {B D G H I} $c] } {
+	    if { $df } {
+	        $steps AddProc "ORTS" "Offset to $targTxt" "" [code $this Step_ORTS]
+	    } else {
+	        $steps AddProc "OTS"  "Offset to $targTxt" "" [code $this Step_OTS]
+	    }
+	}
+	# steps 10-12 (always execute)
+	$steps AddProc     "CTS"  "Center $targTxt"      "" [code $this Step_CTS]
+	$steps AddProc     "ATS"  "Adjust $targTxt pos." "" [code $this Step_ATS]
+	$steps AddProc     "SVE"  "Take a SV exposure"   "" [code $this Step_SVE]
+
+	# execute only the steps specified by the operator
+	$steps ExecOnly $SEQ(STEPS.EXEC)
+    }
+
+
+    #-----------------------------------------------------------------------
+    # Execute template
+    #
+    method Execute {} \
+    {
+        tplSeeVars
+        seeBobVars
+
+	#= 2. calculate coordinates of all stars
+	CalcCoords
+
+	#= 3. open panel, execute steps
+	os Begin
+
+        set dbSlitPos [seq_dbReadSymbolic "<alias>SLIT1.status0"]
+        os setPreviousSlitWidth $dbSlitPos
+
+        #= Scientific detector setup for further use
+        set det1setupA [os Dcs1 GenDet1SetupA $DET1(READ.CURNAME)]
+        tplLog "-noExposure -function $det1setupA"
+	os Setup "-noExposure -function $det1setupA"
+
+        # Slit viewer detector setup for immediate use	
+	os Setup "-file CRIRES_spec_acq_SvExp.ref "
+
+	tplPanStart croseqAcqPanel
+	tplTry \
+        {
+	    $steps Execute
+	} \
+        {
+	    #= 4. close panel
+	    tplPanStop croseqAcqPanel
+	}
+
+	#= 5. save AO loop state
+	croseqAOLoopEndOB
+	croseqAOLoopSave
+
+	tplLog ""
+	tplLog "Acquisition template finished." black 1
+
+	return [list $targA $targD]
+    }
+
+
+    #-----------------------------------------------------------------------
+    # Calculate star coordinates
+    #
+    protected method CalcCoords {} {
+    	tplSeeVars
+
+        #---------------------------------------------------------------
+    	# 1. If no differential tracking: make normal calculation
+	#    otherwise perform special diff. tracking calculation.
+	if { ![info exists SEQ(TRACK.TARG)] } {
+	    set isDiffTracking 0
+	    CalcCoordsNormal
+	} else {
+	    set isDiffTracking 1
+	    CalcCoordsDiffTracking
+	}
+
+        #---------------------------------------------------------------
+	# 2. Proper motion
+	#
+	if { ! $ngsIsTarget && ($TEL(TARG.PMA) != 0.0 || $TEL(TARG.PMD) != 0.0) } {
+	    tplLog "WARNING: IGNORING NON-ZERO PROPER MOTION VALUES." red
+	    set TEL(TARG.PMA) 0.0
+	    set TEL(TARG.PMD) 0.0
+        }
+
+	#---------------------------------------------------------------
+	# 3. Save data for the acq. popup panel
+	#    - sky flat offset
+	#    - FITS keywords: OBS, TPL
+	#
+	set skyFlat $SEQ(SV.USELASTSKY)
+
+	set skyOffA $TEL(SKY.OFFSETALPHA)
+	set skyOffD $TEL(SKY.OFFSETDELTA)
+	# supply the sky flat offset to the acq. panel
+	seq_dbWriteSymbolic "<alias>BOB.skyOffsetA" $skyOffA
+	seq_dbWriteSymbolic "<alias>BOB.skyOffsetD" $skyOffD
+
+	WriteSkyFlatRefFile
+
+	#---------------------------------------------------------------
+	# 4. report steps that will be executed
+	#
+	tplLog ""
+	tplLog "The template will go through the following steps:"
+	set i 1
+	foreach step [$steps List] {
+	    lassign $step id desc
+	    tplLog "$i: $id - $desc"
+	    incr i
+	}
+	tplLog ""
+    }
+
+    protected method CalcCoordsNormal {} {
+	tplSeeVars
+
+	# 1. Target (science object)
+	set targA $TEL(TARG.ALPHA)
+	set targD $TEL(TARG.DELTA)
+
+	# 2. SV guide star
+	set svGuide $SEQ(SV.GUIDE)
+	set svOffA  $TEL(TARG.OFFSETALPHA)
+	set svOffD  $TEL(TARG.OFFSETDELTA)
+
+	# 3. AO star
+	if { $TPL(MODE) == "NoAO" } {
+	    if { $svGuide } {
+		set ngsIsSVGS 1
+		set ngsIsTarget 0
+		if { $svOffA == 0.0 && $svOffD == 0.0 } {
+	    	    set ngsIsTarget 1
+		}
+		set ngsA 0.0
+		set ngsD 0.0
+	    } else {
+		set ngsIsTarget 1
+		set ngsIsSVGS 0
+		if { $svOffA == 0.0 && $svOffD == 0.0 } {
+	    	    set ngsIsSVGS 1
+		}
+		set ngsA $targA
+		set ngsD $targD
+	    }
+	} else {
+	     set ngsIsTarget [expr {$SEQ(NGS.ISTARGET) ? 1 : 0}]
+	     set ngsIsSVGS   [expr {$SEQ(NGS.ISSVGS) ? 1 : 0}]
+	     set ngsA $SEQ(NGS.ALPHA)
+	     set ngsD $SEQ(NGS.DELTA)
+	}
+	if { $ngsIsTarget } {
+	    if { ($ngsA != 0.0 && $ngsA != $targA) || ($ngsD != 0.0 && $ngsD != $targD) } {
+		error "SEQ.NGS.ISTARGET=T, but the NGS star coordinates are different to the target coordinates: parameters are inconsistent."
+	    }
+	    if { $ngsIsSVGS } {
+		if { $svOffA != 0.0 || $svOffD != 0.0 } {
+		    error "SEQ.NGS.ISTARGET=T and SEQ.NGS.ISSVGS=T, therefore TEL.TARG.OFFSETALPHA/OFFSETDELTA should be zero.  This is not the case: parameters inconsistent."
+		}
+	    }
+	    set ngsA $targA
+	    set ngsD $targD
+	    set ngsOffA 0.00
+	    set ngsOffD 0.00
+	}
+
+	# 4. If SEQ.NGS.ISSVGS = T, then the AO star is the SV guide star.
+	#    In this case, the star position has to be supplied with either
+	#    the SEQ.NGS.ALPHA/DELTA or with the TEL.TARG.OFFSETALPHA/OFFSETDELTA
+	#    keywords, but not both.  I.e. if both sets are non-zero, issue an
+	#    error, otherwise use one set to calculate the other.
+	if { $ngsIsSVGS } {
+	    if { $ngsA == 0.0 && $ngsD == 0.0 } {
+		# SEQ.NGS.ALPHA = TEL.TARG.ALPHA + TEL.TARG.OFFSETALPHA
+		# SEQ.NGS.DELTA = TEL.TARG.DELTA + TEL.TARG.OFFSETALPHA
+		set ngsAD [sendCmd 10000 ADDOFF "$targA,$targD,$svOffA,$svOffD"]
+		lassign $ngsAD ngsA ngsD
+	    } else {
+		if { $svOffA != 0.0 || $svOffD != 0.0 } {
+		    error "The NGS star is the SV guide star: supply only SEQ.NGS.* or TEL.TARG.OFFSET* values, but not both."
+		}
+
+		# TEL.TARG.OFFSETALPHA = SEQ.NGS.ALPHA - TEL.TARG.ALPHA
+		# TEL.TARG.OFFSETDELTA = SEQ.NGS.DELTA - TEL.TARG.DELTA
+	        set offList [sendCmd 10000 GETOFF "$ngsA,$ngsD,$targA,$targD"]
+		lassign $offList svOffA svOffD
+	    }
+	    set svA $ngsA
+	    set svD $ngsD
+	    set ngsOffA $svOffA
+	    set ngsOffD $svOffD
+	    set ngsSvOffA 0.00
+	    set ngsSvOffD 0.00
+	}
+	if { ! $ngsIsTarget && $ngsA == 0 && $ngsD == 0 } {
+	    # no NGS coords specified
+	    set ngsIsTarget 1
+	    set ngsA $targA
+	    set ngsD $targD
+	    set ngsOffA 0.00
+	    set ngsOffD 0.00
+	    tplLog "SEQ.NGS.ISTARGET is FALSE but no NGS coords were specified" red
+	}
+
+	# 5. calculate target - AO star offset
+	if { ! $ngsIsTarget && ! $ngsIsSVGS } {
+	    set offList [sendCmd 10000 GETOFF "$ngsA,$ngsD,$targA,$targD"]
+	    lassign $offList ngsOffA ngsOffD
+	}
+
+	# 6. check that the AO star is within the field-selector field
+	set maxToff [os Cfg1 Get OCS.CON.MAXTGGS]
+	if { [expr {abs($ngsOffA) > $maxToff || abs($ngsOffD) > $maxToff}] } {
+	    error "OFFSET TOO LARGE !\n\
+		The offset from Target to NGS is: $ngsOffA, $ngsOffD (arcsec).\n\
+		This is too large for the field selector to compensate in closed loop."
+        }
+
+	# 7. calculate SVGS position and NGS->SVGS offset
+	if { ! $ngsIsSVGS } {
+	    set svAD [sendCmd 10000 ADDOFF "$targA,$targD,$svOffA,$svOffD"]
+	    lassign $svAD svA svD
+	    set offList [sendCmd 10000 GETOFF "$svA,$svD,$ngsA,$ngsD"]
+	    lassign $offList ngsSvOffA ngsSvOffD
+	}
+
+	# 8. report star coordinates and offsets
+	tplLog ""
+	tplLog "Mode  : $TPL(MODE)"
+	tplLog "Target : $targA $targD"
+	tplLog "NGS    : $ngsA $ngsD"
+	tplLog "SVGS  : $svA $svD"
+	tplLog ""
+	tplLog "Offset Target -> NGS  : $ngsOffA $ngsOffD"
+	tplLog "Offset Target -> SVGS: $svOffA $svOffD"
+	tplLog "Offset NGS    -> SVGS: $ngsSvOffA $ngsSvOffD"
+	tplLog ""
+    }
+
+    protected method CalcCoordsDiffTracking {} {
+    	tplSeeVars
+
+	# 1. Target (science object)
+	set targA ""
+	set targD "will be set from target ephemeris table"
+	set targTable $SEQ(TRACK.TARG)
+
+	# 2. reference star
+	set refTable $SEQ(TRACK.REF)
+
+	# 3. load ephemeris tables
+	os DiffTrackInit $targTable $refTable
+	lassign [os DiffTrackGetRefPos] refA refD
+
+	# 4. SV guide star
+	set svA $refA
+	set svD $refD
+	set svOffA 1.0
+	set svOffD 1.0
+
+	# 5. AO star (NGS)
+	set ngsIsSVGS 1
+	set ngsIsTarget 0
+	set ngsA $refA
+	set ngsD $refD
+	set ngsOffA "not_used"
+	set ngsOffD "not_used"
+	set ngsSvOffA "not_used"
+	set ngsSvOffD "not_used"
+
+	# 6. report star coordinates and offsets
+	tplLog ""
+	tplLog "Mode  : $TPL(MODE)"
+	tplLog ""
+	tplLog "Differential tracking enabled"
+	tplLog "Reference star: $refA $refD"
+	tplLog ""
+    }
+
+    #-----------------------------------------------------------------------
+    # Create sky flat setup reference file
+    #
+    protected method WriteSkyFlatRefFile {} {
+    	global env
+        seeBobVars -localcopy OBS
+        seeBobVars -localcopy TPL
+
+	set txt "PAF.HDR.START;\n"
+	append txt "PAF.TYPE         \"Reference Setup\";\n"
+	append txt "PAF.ID           \"croseqSkyFlat.ref\"\n"
+	append txt "PAF.DESC         \"CRIRES sky flat setup file\";\n"
+	append txt "PAF.CRTE.NAME    \"CRIRES\";\n"
+	append txt "PAF.CRTE.DAYTIM  \"2008-11-17T00:00:00.000\";\n"
+	append txt "PAF.LCHG.NAME    \"CRIRES\";\n"
+	append txt "PAF.LCHG.DAYTIM  \"2008-11-17T00:00:00.000\";\n"
+	append txt "PAF.HDR.END;\n\n"
+	if { [info exists OBS(DID)]         } { append txt "OBS.DID         \"$OBS(DID)\";\n" }
+	if { [info exists OBS(EXECTIME)]    } { append txt "OBS.EXECTIME    \"$OBS(EXECTIME)\";\n" }
+	if { [info exists OBS(GRP)]         } { append txt "OBS.GRP         \"$OBS(GRP)\";\n" }
+	if { [info exists OBS(ID)]          } { append txt "OBS.ID          \"$OBS(ID)\";\n" }
+	if { [info exists OBS(NAME)]        } { append txt "OBS.NAME        \"$OBS(NAME)\";\n" }
+	if { [info exists OBS(OBSERVER)]    } { append txt "OBS.OBSERVER    \"$OBS(OBSERVER)\";\n" }
+	if { [info exists OBS(PI-COI.ID)]   } { append txt "OBS.PI-COI.ID   \"$OBS(PI-COI.ID)\";\n" }
+	if { [info exists OBS(PI-COI.NAME)] } { append txt "OBS.PI-COI.NAME \"$OBS(PI-COI.ID)\";\n" }
+	if { [info exists OBS(PROG.ID)]     } { append txt "OBS.PROG.ID     \"$OBS(PROG.ID)\";\n" }
+	if { [info exists OBS(START)]       } { append txt "OBS.START       \"$OBS(START)\";\n" }
+	if { [info exists OBS(TARG.NAME)]   } { append txt "OBS.TARG.NAME   \"$OBS(TARG.NAME)\";\n" }
+	if { [info exists OBS(TPLNO)]       } { append txt "OBS.TPLNO       \"$OBS(TPLNO)\";\n\n" }
+	if { [info exists TPL(DID)]         } { append txt "TPL.DID         \"$TPL(DID)\";\n" }
+	if { [info exists TPL(ID)]          } { append txt "TPL.ID          \"$TPL(ID)\";\n" }
+	if { [info exists TPL(NAME)]        } { append txt "TPL.NAME        \"$TPL(NAME)\";\n" }
+	if { [info exists TPL(PRESEQ)]      } { append txt "TPL.PRESEQ      \"$TPL(PRESEQ)\";\n" }
+	if { [info exists TPL(START)]       } { append txt "TPL.START       \"$TPL(START)\";\n" }
+	if { [info exists TPL(VERSION)]     } { append txt "TPL.VERSION     \"$TPL(VERSION)\";\n" }
+	if { [info exists TPL(NEXP)]        } { append txt "TPL.NEXP        \"$TPL(NEXP)\";\n" }
+	if { [info exists TPL(EXPNO)]       } { append txt "TPL.EXPNO       \"$TPL(EXPNO)\";\n\n" }
+	append txt "DPR.CATG \"ACQUISITION\";\n"
+	append txt "DPR.TECH \"IMAGE\";\n"
+	append txt "DPR.TYPE \"SKY\";\n\n"
+	 
+	append txt "DET.WIN.TYPE   1;\n"
+	append txt "DET.WIN.STARTX 0;\n"
+	append txt "DET.WIN.STARTY 0;\n"
+	append txt "DET.WIN.NX     1024;\n"
+	append txt "DET.WIN.NY     1024;\n"
+
+	set skyFlatRef [file join $env(INS_ROOT) SYSTEM COMMON SETUPFILES REF croseqSkyFlat.ref]
+	file delete $skyFlatRef
+	write_file $skyFlatRef $txt
+    }
+
+
+    #-----------------------------------------------------------------------
+    # Preset to AO star
+    #
+    protected method Step_PAO {} {
+	tplSeeVars
+
+	tplLog "Presetting the telescope to the $ngsTxt"
+	Preset $ngsA $ngsD
+    }
+
+
+    #-----------------------------------------------------------------------
+    # Center AO star
+    #
+    protected method Step_CAO {} {
+    	tplSeeVars
+
+      	#= 1. use popup panel
+	SvRtdShow WFS_CENTER
+	tplLog "Center the $ngsTxt using the acq. popup panel"
+	tplLog "(Press the popup panel Continue button to continue the template)."
+	tplPanWait
+
+	#= 2. set AO star coordinates
+	#     (aproximation only, see below step AAO)
+	SetNgs
+    }
+
+
+    #-----------------------------------------------------------------------
+    # Close AO loop
+    #
+    protected method Step_AOLP {} {
+	tplSeeVars
+
+	#= 1. Acquire and close AO loop
+	tplLog "Acquiring the $ngsTxt and closing the AO loop"
+	os Acquire
+
+	#= 2. if AO loop is closed, then from now on, start moving the field-selector
+	if { [os Macao IsLoopClosed] } {
+	    os Setup "-function OCS.CON.EMODEAO T"
+	}
+    }
+
+
+    #-----------------------------------------------------------------------
+    # Adjust AO star position
+    #
+    protected method Step_AAO {} {
+	tplSeeVars
+
+	#= 1. offset by diff. refraction between AO and SV eff. wavelengths
+	tplLog "Adjusting the $ngsTxt position by:"
+	tplLog "- diff. refraction between AO and SV eff. wavelengths"
+	set wlen1 [os GetSvWlen]
+	set color $SEQ(NGS.COLOR)
+	set wlen2 [expr {590.0 + $color * 40.0}]
+	lassign [os RefractAD $wlen1 $wlen2] refrA refrD
+	os Offsadg $refrA $refrD
+
+	# 2. set AO star coordinates again, because now the AO.SVWLEN star
+	#    is now properly on top of the slit center.
+	SetNgs
+    }
+
+
+    #-----------------------------------------------------------------------
+    # Preset to SVGS
+    #
+    protected method Step_PGS {} {
+	tplSeeVars
+
+	tplLog "Presetting the telescope to the $svTxt"
+	Preset $svA $svD
+    }
+
+
+    #-----------------------------------------------------------------------
+    # Offset to SVGS
+    #
+    protected method Step_OGS {} {
+
+	tplLog "Offsetting to the $svTxt"
+	os Offsadg $ngsSvOffA $ngsSvOffD
+    }
+
+
+    #-----------------------------------------------------------------------
+    # Center SVGS
+    #
+    protected method Step_CGS {} {
+	tplSeeVars
+
+	#= 1. set guiding window to slit center
+	lassign [os GetSlitCenter] cenx ceny
+	os Setup "-function \
+	    OCS.CON.EGUIDE F \
+	    DET2.GUIDEWIN.CENTERX $cenx \
+	    DET2.GUIDEWIN.CENTERY $ceny"
+	SvRtdShow GW_RECT
+
+      	#= 2. use popup panel
+	tplLog "Center the $svTxt using the acq. popup panel"
+	tplLog "(Press the popup panel Continue button to continue the template)."
+	tplPanWait
+    }
+
+
+    #-----------------------------------------------------------------------
+    # Start SV guiding
+    #
+    protected method Step_SG {} {
+	tplSeeVars
+
+    	tplLog "Starting SV guiding"
+
+	#= 1. set guiding window to slit center
+	#     (make sure SV guiding is disabled when setting SV guiding center)
+	lassign [os GetSlitCenter] cenx ceny
+	os Setup "-function \
+	    OCS.CON.EGUIDE F \
+	    DET2.GUIDEWIN.CENTERX $cenx \
+	    DET2.GUIDEWIN.CENTERY $ceny"
+
+	#= 2. enable guiding
+	sendCmd 10000 SETUP "-function OCS.CON.EGUIDE T"
+	SvRtdShow GW_RECT
+	SvRtdShow CENTER_CROSS
+
+      	#= 3. use popup panel
+	tplLog "Wait a moment for SV guiding to settle before continuing"
+	tplLog "(Press the popup panel Continue button to continue the template)."
+	tplPanWait
+
+	#= 4. set SV star coordinates
+	SetSv
+    }
+
+
+    #-----------------------------------------------------------------------
+    # Preset to target star
+    #
+    protected method Step_PTS {} {
+	tplSeeVars
+
+	tplLog "Presetting the telescope to the $targTxt"
+	Preset $targA $targD
+    }
+
+
+    #-----------------------------------------------------------------------
+    # Offset to target star from diff. tracking reference star
+    #
+    protected method Step_ORTS {} {
+
+    	# offset to target
+	tplLog "Offsetting to the $targTxt"
+	lassign [os DiffTrackOffsetRefTarg] refTargOffA refTargOffD
+
+	# calculate current target position
+	set targAD [sendCmd 10000 ADDOFF "$refA,$refD,$refTargOffA,$refTargOffD"]
+	lassign $targAD targA targD
+    }
+
+
+    #-----------------------------------------------------------------------
+    # Offset to target star
+    #
+    protected method Step_OTS {} {
+
+	tplLog "Offsetting to the $targTxt"
+	set offA [expr {0.0 - $svOffA}]
+	set offD [expr {0.0 - $svOffD}]
+	os Offsadg $offA $offD
+    }
+
+
+    #-----------------------------------------------------------------------
+    # Center target star
+    #
+    protected method Step_CTS {} {
+	tplSeeVars
+
+      	#= 1. use popup panel
+	tplLog "Center the $targTxt using the acq. popup panel"
+	tplLog "(Press the popup panel Continue button to continue the template)."
+	tplPanWait
+
+	#= 2. set target star coordinates
+	SetTarg
+	SvRtdShow TARG.SV
+    }
+
+
+    #-----------------------------------------------------------------------
+    # Adjust target star position
+    #
+    protected method Step_ATS {} {
+	tplSeeVars
+
+	tplLog "Adjusting the $targTxt position by:"
+	tplLog "- diff. refraction between SV and target eff. wavelengths"
+	set wlen1 $INS(WLEN.CWLEN)
+	set wlen2 [os GetSvWlen]
+	lassign [os RefractAD $wlen1 $wlen2] refrA refrD
+	os Offsadg $refrA $refrD
+
+	tplLog "- chromatic effect"
+	set wlen $INS(WLEN.CWLEN)
+	lassign [os Chromat $wlen] dx dy
+	os Offsxy $dx $dy
+    }
+
+
+    #-----------------------------------------------------------------------
+    # Take a SV exposure
+    #
+    protected method Step_SVE {} \
+    {
+	tplSeeVars
+
+	#= 1. start periodic refraction calculation
+	os PerRefrInit
+	os PerRefrSetState 1
+
+	#= 2. start differential tracking
+	if { $isDiffTracking } \
+        {
+	    os DiffTrackSetState 1
+	}
+
+      	#= 3. use popup panel
+	tplLog "Ready to take a slit-viewer exposure."
+	tplLog "(Press the popup panel Continue button to continue the template)."
+	tplPanWait
+
+	#= 4. take SV exposure
+	set TPL(NEXP) 1                                          
+	tplLog "Taking Slit Viewer exposure"
+	os Setup "-function INS.MODE Imaging OCS.DET2.IMGNAME CRIRES_ACQ_SLIT"
+	os Start
+	os Wait
+    }
+
+    #-----------------------------------------------------------------------
+    # Preset to alpha,delta
+    #
+    protected method Preset { alpha delta } {
+	tplSeeVars
+
+	#= 1. Send SETINSD, check sky baffle, open loop
+	checkAbortFlag
+	SvRtdShow NONE SLIT
+	os Tcs Setinsd 1
+	os Tcs CheckSkyBaffle RETRACTED
+	os Macao OpenLoop
+	if { $TPL(MODE) == "NoAO" } {
+	    os Setup "-function OCS.INS3.PARK T"
+	}
+
+	#= 2. if preset: clear all star coordinates
+	#     place the SV guiding window on the slit center,
+	#     stop periodic refraction
+	#     stop differential tracking
+        #     reset saved observing positions
+	#
+	os Setup "-function \
+	    INS.MODE Imaging OCS.CON.EGUIDE F"
+	lassign [os GetSlitCenter] svX svY
+	os Setup "-function \
+	    OCS.CON.EMODEAO F \
+	    OCS.STAR.AO.AOWLEN.ST F \
+	    OCS.STAR.AO.SVWLEN.ST F \
+	    OCS.STAR.SV.SVWLEN.ST F \
+	    OCS.STAR.TARG.SVWLEN.ST F \
+	    OCS.STAR.TARG.UNCORR.ST F \
+	    OCS.STAR.TARG.CORR.ST F \
+	    DET2.GUIDEWIN.CENTERX $svX \
+	    DET2.GUIDEWIN.CENTERY $svY"
+	os PerRefrSetState 0
+	os DiffTrackSetState 0
+        seq_dbWriteSymbolic "<alias>SAVED_POS.saved" 0
+
+	#= 3. if differential tracking: get add. velocity, reset other parameters
+	if { $isDiffTracking } {
+	    lassign [os DiffTrackGetTargAddVel] addVelA addVelD
+	    tplLog "Differential tracking additional velocities: $addVelA $addVelD \[arcsec/s\]"
+	} else {
+	    set addVelA $TEL(TARG.ADDVELALPHA)
+	    set addVelD $TEL(TARG.ADDVELDELTA)
+	}
+
+	#= 4. preset telescope
+
+	# use guidestar if defined
+	set gs ""
+	if { $TEL(AG.GUIDESTAR) == "SETUPFILE" } {
+	    set gs "TEL.GS1.ALPHA $TEL(GS1.ALPHA) TEL.GS1.DELTA $TEL(GS1.DELTA)"
+	}
+
+	# get derotator parameters
+	set drotMode "SKY"
+	if { [info exists INS(DROT.MODE)] } {
+	    set drotMode $INS(DROT.MODE)
+	}
+	set drotPosang 0
+	if { [info exists INS(DROT.POSANG)] } {
+	    set drotPosang $INS(DROT.POSANG)
+	}
+
+	# Note: Normally when a NGS star is used, we preset to this NGS
+	# star, therefore INS1.FSEL.GSALPHA/GSDELTA need to be set.
+	# If we do not use AO, then we preset to another star, however we
+	# anyway set INS1.FSEL.GSALPHA/GSDELTA to initialize them to a
+	# +/- sensible value (in particular to not leave them pointing
+	# to a previous OB location).
+	checkAbortFlag
+	if { $SEQ(PRESET) } {
+	    os Setup "-file $TPL(REFSUP)"
+	    os Setup "-function \
+		TEL.TARG.TYPE	     COORDINATE \
+		TEL.TARG.ALPHA       $alpha \
+		TEL.TARG.DELTA       $delta \
+        	TEL.TARG.EPOCH       $TEL(TARG.EPOCH) \
+        	TEL.TARG.EPOCHSYSTEM \"J\" \
+		TEL.TARG.EQUINOX     $TEL(TARG.EQUINOX) \
+        	TEL.TARG.PMA         $TEL(TARG.PMA) \
+        	TEL.TARG.PMD         $TEL(TARG.PMD) \
+		TEL.TARG.ADDVELDELTA $addVelD \
+		TEL.TARG.ADDVELALPHA $addVelA \
+		TEL.TARG.OFFSETALPHA 0.0 \
+		TEL.TARG.OFFSETDELTA 0.0 \
+		TEL.AG.GUIDESTAR     $TEL(AG.GUIDESTAR) $gs \
+		TEL.TARG.WLENGTH     $INS(WLEN.CWLEN) \
+		INS1.DROT.MODE       $drotMode \
+		INS1.DROT.POSANG     $drotPosang \
+		INS1.FSEL.GSALPHA    $alpha \
+		INS1.FSEL.GSDELTA    $delta \
+		INS.SLIT1.NAME        $INS(SLIT1.NAME) \
+		DET2.SEQ1.DIT 0 DET2.NDIT 1"
+	}
+
+	#= 5. always set additional velocities and instrument
+	if { !$SEQ(PRESET) } {
+	    tplLog "SEQ.PRESET=F: Skipping telescope preset" red
+	    os Tcs Setav $addVelA $addVelD
+	    os Setup "-file $TPL(REFSUP)"
+	    os Setup "-function \
+		INS1.DROT.MODE       $drotMode \
+		INS1.DROT.POSANG     $drotPosang \
+		INS.SLIT1.NAME        $INS(SLIT1.NAME)"
+	}
+
+        #= 6. check slit position
+ 	checkAbortFlag
+        # os CheckSlitPos $INS(SLIT.WID)
+
+	#= 7. set sky flat
+	checkAbortFlag
+	if { $SEQ(SV.USELASTSKY) } {
+	    os Dcs2 SetSkyFlat
+	}
+
+
+	#= 8. setup ref. wavelength (intermediate slit, prism, grating and piezo)
+	checkAbortFlag
+	os Setup "-function INS.WLEN.CWLEN $INS(WLEN.CWLEN)"
+
+	# baffle, calibration mirror, carriage and entrance slit might have moved
+	# while setting up the ref. wavelength: move them now to proper positions
+# ASM 2009-09-03: Not the case anymore since May 2009
+# <=Old
+#	os Setup "-file $TPL(REFSUP) -function \
+#	    INS.MODE	     Imaging \
+#	    INS1.DROT.MODE   $drotMode \
+#	    INS1.DROT.POSANG $drotPosang \
+#	    INS1.POS1.ST     F \
+#	    INS1.MIRR1.NAME  SKY \
+#	    INS1.OPTI1.NAME  $INS(OPTI1.NAME) \
+#	    INS.FILT1.WLEN   $INS(WLEN.REF) \
+#	    INS.SLIT1.WID    $INS(SLIT.WID)"
+# Old=> 
+	os Setup "-function \
+	    INS.MODE	     Imaging \
+	    INS1.MIRR1.NAME  SKY \
+	    INS1.OPTI1.NAME  $INS(OPTI1.NAME) \
+	    INS.FILT1.WLEN   $INS(WLEN.CWLEN)"
+         
+#	    INS1.POS1.ST     F \
+
+	#= 9. wait for autoguiding and active optics
+	checkAbortFlag
+	if { [os Tcs IsAgActive -wait] == 0 } {
+	    error "Autoguiding not started."
+	}
+	checkAbortFlag
+	if { [os Tcs IsAoActive -wait] == 0 } {
+	    error "Active optics not started."
+	}
+    }
+
+
+    #-----------------------------------------------------------------------
+    # Set star coordinates
+    #
+    protected method SetNgs {} {
+    	tplSeeVars
+
+	#= 1. set AO.SVWLEN coordinates
+	lassign   [os GetSlitCenter] ngsX ngsY
+	set wlen1 [os GetSvWlen]
+	set color $SEQ(NGS.COLOR)
+	set wlen2 [expr {590.0 + $color * 40.0}]
+	os Setup "-function INS.MODE Imaging \
+	    OCS.STAR.AO.SVWLEN.ALPHA $ngsA OCS.STAR.AO.SVWLEN.DELTA $ngsD \
+	    OCS.STAR.AO.SVWLEN.X $ngsX     OCS.STAR.AO.SVWLEN.Y $ngsY \
+	    OCS.STAR.AO.SVWLEN.WLEN $wlen1"
+
+	#= 2. set AO.AOWLEN coordinates
+	lassign [os RefractAD $wlen1 $wlen2] refrA refrD
+	lassign [os RefractXY $wlen1 $wlen2] refrX refrY
+	set ngs2A [expr {$ngsA - $refrA}]
+	set ngs2D [expr {$ngsD - $refrD}]
+	set ngs2X [expr {$ngsX - $refrX}]
+	set ngs2Y [expr {$ngsY - $refrY}]
+	os Setup "-function \
+	    OCS.STAR.AO.AOWLEN.COLOR $color \
+	    OCS.STAR.AO.AOWLEN.ALPHA $ngs2A OCS.STAR.AO.AOWLEN.DELTA $ngs2D \
+	    OCS.STAR.AO.AOWLEN.X $ngs2X     OCS.STAR.AO.AOWLEN.Y $ngs2Y"
+	# We are already showing the WFS location, so we do not need
+	# to show also the AO stars (to avoid filling up the RTD).
+	#SvRtdShow AO.SVWLEN AO.AOWLEN
+
+	#= 3. set SVGS
+	if { $ngsIsSVGS } { SetSv 0 }
+
+	#= 4. set target
+	if { $ngsIsTarget } { SetTarg }
+    }
+
+    protected method SetSv { {setTarg 1} } {
+    	tplSeeVars
+
+	#= 1. set SV.SVWLEN coordinates and SV guiding window
+	lassign  [os GetSlitCenter] svX svY
+	set wlen [os GetSvWlen]
+	os Setup "-function INS.MODE Imaging \
+	    DET2.GUIDEWIN.CENTERX $svX    DET2.GUIDEWIN.CENTERY $svY \
+	    OCS.STAR.SV.SVWLEN.ALPHA $svA OCS.STAR.SV.SVWLEN.DELTA $svD \
+	    OCS.STAR.SV.SVWLEN.X $svX     OCS.STAR.SV.SVWLEN.Y $svY \
+	    OCS.STAR.SV.SVWLEN.WLEN $wlen"
+	# We are already showing the SV guiding window.
+	#SvRtdShow SV.SVWLEN
+
+	#= 2. set target
+	if { $setTarg && $svOffA == 0.0 && $svOffD == 0.0 } { SetTarg }
+    }
+
+    protected method SetTarg {} {
+    	tplSeeVars
+
+    	#= 1. set TARG.SVWLEN coordinates
+	lassign  [os GetSlitCenter] targX targY
+	set wlen1 [os GetSvWlen]
+	os Setup "-function INS.MODE Imaging \
+	    OCS.STAR.TARG.SVWLEN.ALPHA $targA OCS.STAR.TARG.SVWLEN.DELTA $targD \
+	    OCS.STAR.TARG.SVWLEN.X $targX     OCS.STAR.TARG.SVWLEN.Y $targY \
+	    OCS.STAR.TARG.SVWLEN.WLEN $wlen1"
+
+    	#= 2. set TARG.UNCORR coordinates
+	#     slit center + diff. refr(SV,INS.WLEN.REF)
+	set wlen2 $INS(WLEN.CWLEN)
+	lassign [os RefractAD $wlen1 $wlen2] refrA refrD
+	lassign [os RefractXY $wlen1 $wlen2] refrX refrY
+	set targ2A [expr {$targA - $refrA}]
+	set targ2D [expr {$targD - $refrD}]
+	set targ2X [expr {$targX - $refrX}]
+	set targ2Y [expr {$targY - $refrY}]
+	os Setup "-function \
+	    OCS.STAR.TARG.UNCORR.ALPHA $targ2A OCS.STAR.TARG.UNCORR.DELTA $targ2D \
+	    OCS.STAR.TARG.UNCORR.X $targ2X     OCS.STAR.TARG.UNCORR.Y $targ2Y \
+	    OCS.STAR.TARG.UNCORR.WLEN $wlen2"
+
+    	#= 3. set TARG.CORR coordinates
+	#     TARG.UNCORR - chromatic effect
+	lassign [os Chromat $wlen2] dx dy
+	set targ2X [expr {$targ2X - $dx}]
+	set targ2Y [expr {$targ2Y - $dy}]
+	os Setup "-function \
+	    OCS.STAR.TARG.CORR.ALPHA $targ2A OCS.STAR.TARG.CORR.DELTA $targ2D \
+	    OCS.STAR.TARG.CORR.X $targ2X     OCS.STAR.TARG.CORR.Y $targ2Y \
+	    OCS.STAR.TARG.CORR.WLEN $wlen2"
+
+	#= 4. init. periodic corrections?
+	#os PerRefrInit
+
+	#= 4. show stars in the SV rtd
+	# Only show the corrected target
+	#SvRtdShow TARG.UNCORR TARG.CORR
+	SvRtdShow TARG.CORR
+    }
+
+    #-----------------------------------------------------------------------
+    # Set SV RTD drawings
+    #
+    # The argument may be a list of objects:
+    # ALL NONE SLIT GW_RECT CENTER_CROSS WFS_CENTER
+    # AO.AOWLEN AO.SVWLEN SV.SVWLEN TARG.CORR TARG.UNCORR
+    # WFS_GRID SLIT_GRID
+    # 
+    protected method SvRtdShow { args } {
+	tplSeeVars
+
+# TEMP	tplMsgCall "" crortdSv_NGCIR2 SCRIPT "do_cmd SHOW_DRAW $args"
+    }
+
+
+    #-----------------------------------------------------------------------
+    # variables
+    #
+    protected variable steps
+
+    protected variable targTxt
+    protected variable targA
+    protected variable targD
+
+    protected variable ngsTxt
+    protected variable ngsIsSVGS
+    protected variable ngsIsTarget
+    protected variable ngsA
+    protected variable ngsD
+    protected variable ngsOffA
+    protected variable ngsOffD
+    protected variable ngsSvOffA
+    protected variable ngsSvOffD
+
+    protected variable svTxt
+    protected variable svA
+    protected variable svD
+    protected variable svOffA
+    protected variable svOffD
+
+    protected variable isDiffTracking
+    protected variable refA
+    protected variable refD
+}
+
+#
+#___oOo___
+
+

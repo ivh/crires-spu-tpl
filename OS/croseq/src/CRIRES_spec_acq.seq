@@ -31,7 +31,7 @@
 # rsc/asm   2007-10-16  PPRS-024583: TEL.TARG.OFFSETALPHA/DELTA=0 added.
 # rschmutz  2007-10-04  PPRS-021769: setupWlenConf adjusted to add INS.PRISM.WLEN
 # rsc/asm   2007-09-04  PPRS-024947: checks added.
-# pbaksai   2007-08-03  PPRS-024737: wlenSetup removed from insSetup 
+# pbaksai   2007-08-03  PPRS-024737: wlenSetup removed from insSetup
 # rschmutz  2007-06-07  PPRS-023768: setupWlenConf added.
 # pbaksai   2007-04-25  PPRS-023557: DET1.SEQ1.DIT set to 1
 # rschmutz  2007-04-23  PPRS-022753: uif added.
@@ -48,14 +48,14 @@
 #                       - change by getWlenConfCheckChange is handled in getWlenConf
 #                       - OBD/TSF keywords shouldn't be modified (see BOB message)
 # epozna    2006-10-02  - Check current WLEN.ID before setting (see getWlenConfCheckChange)
-#                         and adjust Filter  if set via SVFW assembly) 
+#                         and adjust Filter  if set via SVFW assembly)
 #                       - Telescope (first) preset to AO star (NGS)
 # pbiereic  2006-07-05  Created
 #
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #   NAME
 #       CRIRES_spec_acq - CRIRES acquisition template
-# 
+#
 #   DESCRIPTION
 #	The acquisition is performed in several steps, described below.
 #
@@ -66,7 +66,7 @@
 
 proc CRIRES_spec_acq {} {
 
-    tplNew croseqOS os 
+    tplNew croseqOS os
     croseqTPL_ACQ tpl
 
     tpl Init
@@ -137,6 +137,7 @@ class croseqTPL_ACQ {
 	    set ag "T"
 	}
 
+  # [TODO]: If polarimetry: set INS(OPTI1.NAME) "SPU"
 	# check carriage position
 	if { ![info exists INS(OPTI1.NAME)] } {
 	    set INS(OPTI1.NAME) "FREE"
@@ -200,15 +201,15 @@ class croseqTPL_ACQ {
 
 	#= 3. create template steps according to current case
 	#
-	# Cases vs. steps	         | A| B| C| D| E| F| G| H| I|
+	# Cases vs. steps	               | A| B| C| D| E| F| G| H| I|
 	# -----------------------------------------------------------
 	# 1.  Preset to AO star	         | -| -| -| -| x| x| x| x| x|
 	# 2.  Center AO star (popup)     | -| -| -| -| x| x| x| x| x|
-	# 3.  Close AO loop	         | -| -| -| -| x| x| x| x| x|
+	# 3.  Close AO loop	             | -| -| -| -| x| x| x| x| x|
 	# 4.  Adjust AO star pos.        | -| -| -| -| x| x| x| x| x|
 	# 5.  Center AO star (popup)     | -| -| -| -| x| x| x| x| x|
-	# 6a. Preset to SVGS	         | -| x| x| x| -| -| -| -| -|
-	# 6b. Offset to SVGS	         | -| -| -| -| -| x| x| -| x|
+	# 6a. Preset to SVGS             | -| x| x| x| -| -| -| -| -|
+	# 6b. Offset to SVGS             | -| -| -| -| -| x| x| -| x|
 	# 7.  Center SVGS (popup)        | -| x| x| x| -| x| x| -| x|
 	# 8.  Start SV guiding	         | -| -| x| x| x| x| x| x| x| (only x2 cases)
 	# 9a. Preset to target star      | x| -| -| -| -| -| -| -| -|
@@ -217,7 +218,7 @@ class croseqTPL_ACQ {
 	# 11. Adjust target star pos.    | x| x| x| x| x| x| x| x| x|
 	# 12. Take SV exposure           | x| x| x| x| x| x| x| x| x|
 	#
-    
+
 	# steps 1-5
 	if { [lcontain {E F G H I} $c] } {
 	    $steps AddProc "PAO"  "Preset to $ngsTxt"    "" [code $this Step_PAO]
@@ -286,7 +287,7 @@ class croseqTPL_ACQ {
         tplLog "-noExposure -function $det1setupA"
 	os Setup "-noExposure -function $det1setupA"
 
-        # Slit viewer detector setup for immediate use	
+        # Slit viewer detector setup for immediate use
 	os Setup "-file CRIRES_spec_acq_SvExp.ref "
 
 	tplPanStart croseqAcqPanel
@@ -570,7 +571,7 @@ class croseqTPL_ACQ {
 	append txt "DPR.CATG \"ACQUISITION\";\n"
 	append txt "DPR.TECH \"IMAGE\";\n"
 	append txt "DPR.TYPE \"SKY\";\n\n"
-	 
+
 	append txt "DET.WIN.TYPE   1;\n"
 	append txt "DET.WIN.STARTX 0;\n"
 	append txt "DET.WIN.STARTY 0;\n"
@@ -821,7 +822,7 @@ class croseqTPL_ACQ {
 	tplPanWait
 
 	#= 4. take SV exposure
-	set TPL(NEXP) 1                                          
+	set TPL(NEXP) 1
 	tplLog "Taking Slit Viewer exposure"
 	os Setup "-function INS.MODE Imaging OCS.DET2.IMGNAME CRIRES_ACQ_SLIT"
 	os Start
@@ -965,13 +966,13 @@ class croseqTPL_ACQ {
 #	    INS1.OPTI1.NAME  $INS(OPTI1.NAME) \
 #	    INS.FILT1.WLEN   $INS(WLEN.REF) \
 #	    INS.SLIT1.WID    $INS(SLIT.WID)"
-# Old=> 
+# Old=>
 	os Setup "-function \
 	    INS.MODE	     Imaging \
 	    INS1.MIRR1.NAME  SKY \
 	    INS1.OPTI1.NAME  $INS(OPTI1.NAME) \
 	    INS.FILT1.WLEN   $INS(WLEN.CWLEN)"
-         
+
 #	    INS1.POS1.ST     F \
 
 	#= 9. wait for autoguiding and active optics
@@ -1093,7 +1094,7 @@ class croseqTPL_ACQ {
     # ALL NONE SLIT GW_RECT CENTER_CROSS WFS_CENTER
     # AO.AOWLEN AO.SVWLEN SV.SVWLEN TARG.CORR TARG.UNCORR
     # WFS_GRID SLIT_GRID
-    # 
+    #
     protected method SvRtdShow { args } {
 	tplSeeVars
 
@@ -1133,5 +1134,3 @@ class croseqTPL_ACQ {
 
 #
 #___oOo___
-
-

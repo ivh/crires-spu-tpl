@@ -1,0 +1,26 @@
+#******************************************************************************
+# E.S.O. - VLT project
+#
+# "@(#) $Id: crotsfSEQ_NODTHROW.tsfx 181465 2009-03-09 17:20:54Z rschmutz $"
+#
+# who       when      what
+# --------  --------  ----------------------------------------------
+# alavail  18/04/19  created
+#
+
+#************************************************************************
+#   NAME
+#   crotsfSEQ_POLNODTHROW - Fixed nodding offset along the slit (arcsec)
+#    
+#------------------------------------------------------------------------
+#
+
+TPL.PARAM               "SEQ.NODTHROW";
+SEQ.NODTHROW.TYPE       "number";
+SEQ.NODTHROW.RANGE      "2.5";
+SEQ.NODTHROW.DEFAULT    "2,5";
+SEQ.NODTHROW.LABEL      "Nod throw along the slit";
+SEQ.NODTHROW.MINIHELP   "Nod throw along the slit in arcsec";
+ 
+#
+#___oOo___

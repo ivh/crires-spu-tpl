@@ -4,6 +4,7 @@
 #
 # who       when        what
 # --------  ----------  -------------------------------------------------------
+# alavail   2019-04-18  added .tsfx file setting fixed nod throw
 # tmarquar  2018-11-29  created, based on CRIRES_spec_obs_AutoNodOnSlit.tsfx
 #
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -55,7 +56,8 @@ PAF.INCLUDE		        "crotsfDET1_NCORRS_NAME.tsfx";
 
 # only include this instead of _NODDING because we don't need nodthrow or jitter
 PAF.INCLUDE             "crotsfSEQ_NABCYCLES.tsfx";
-
+# include instead the dedicated .tsfx file setting fixed nod throw for pol mode
+PAF.INCLUDE		"crotsfSEQ_POLNODTHROW.tsfx"
 #
 #___oOo___
 

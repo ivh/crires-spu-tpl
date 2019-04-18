@@ -87,9 +87,9 @@ class croseqTPL_POLNOD {
 	set nexpo        $SEQ(NEXPO)
 	set nodThrow     $SEQ(NODTHROW)
 	set nodDelay     $SEQ(NOD.DELAY)
-
+  set pol          $INS(POL.NAME)
 	# total number of exposures: 2 exposures per AB cycles * n_exposures set by user * 4 polarimetric sub-exposures
-	set TPL(NEXP) [expr {$nexpo * $nAB * 2 * 4 * }]
+	set TPL(NEXP) [expr {$nexpo * $nAB * 2 * 4 }]
 
 	# set DPR.TECH according to spec.
 	set tech "SPECTRUM"
@@ -157,17 +157,21 @@ class croseqTPL_POLNOD {
 
     #--------------------------------------------------------------------
     # checking the polarization type and wavelength band to generate a polmode token
-    # [TODO]: check how to get the YJ or HK band, and pol type
-    if { $wave == YJ AND $pol = CIRC} {
+    # [TODO]: check how to get the YJ or HK band, for now it is hardcoded
+
+    set wave "YJ"
+    set pol "CIRCULAR"
+    set offset "0"
+    if { $wave == YJ AND $pol = CIRCULAR} {
       set polmode "YJC"
     }
-    if { $wave == HK AND $pol = CIRC} {
+    if { $wave == HK AND $pol = CIRCULAR} {
       set polmode "HKC"
     }
-    if { $wave == YJ AND $pol = LIN} {
+    if { $wave == YJ AND $pol = LINEAR} {
       set polmode "YJL"
     }
-    if { $wave == HK AND $pol = LIN} {
+    if { $wave == HK AND $pol = LINEAR} {
       set polmode "HKL"
     }
 		#--------------------------------------------------------------------
@@ -295,7 +299,7 @@ class croseqTPL_POLNOD {
 	    }
 
 	    # move back to the origin before starting next loop
-    } # end method main
+    }
 
 
     #-----------------------------------------------------------------------
@@ -445,7 +449,6 @@ class croseqTPL_POLNOD {
     protected variable scidet_ysecpix
     protected variable sumOffset_ 0.0
     protected variable expsDone 0
-}
 }
 
 

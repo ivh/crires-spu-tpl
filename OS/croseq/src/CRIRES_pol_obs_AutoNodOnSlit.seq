@@ -162,16 +162,16 @@ class croseqTPL_POLNOD {
     set wave "YJ"
     set pol "CIRCULAR"
     set offset "0"
-    if { $wave == YJ AND $pol = CIRCULAR} {
+    if { $wave == "YJ" AND $pol == "CIRCULAR"} {
       set polmode "YJC"
     }
-    if { $wave == HK AND $pol = CIRCULAR} {
+    if { $wave == "HK" AND $pol == "CIRCULAR"} {
       set polmode "HKC"
     }
-    if { $wave == YJ AND $pol = LINEAR} {
+    if { $wave == "YJ" AND $pol == "LINEAR"} {
       set polmode "YJL"
     }
-    if { $wave == HK AND $pol = LINEAR} {
+    if { $wave == "HK" AND $pol == "LINEAR"} {
       set polmode "HKL"
     }
 		#--------------------------------------------------------------------

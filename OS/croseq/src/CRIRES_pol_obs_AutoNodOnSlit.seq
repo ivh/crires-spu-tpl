@@ -136,7 +136,7 @@ class croseqTPL_POLNOD {
 
 
   loop i 0 [string length $seqL] {
-		checkAbortFlag
+    checkAbortFlag
 
 		# current token from sequence string
 		set tok [string index $seqL $i]
@@ -146,7 +146,7 @@ class croseqTPL_POLNOD {
 		#
 		if { "$tok" == "A" || "$tok" == "B" } {
 
-	    lassign [CumOffset $sumOffset_] px py
+      lassign [CumOffset $sumOffset_] px py
 	    set fits "\
 			SEQ.NODTHROW     $nodThrow \
 			SEQ.NABCYCLES    $nAB \
@@ -154,11 +154,9 @@ class croseqTPL_POLNOD {
 			SEQ.CUMOFFSETY   $py \
 			SEQ.NODPOS       $tok"
 		}
-
     #--------------------------------------------------------------------
     # checking the polarization type and wavelength band to generate a polmode token
     # [TODO]: check how to get the YJ or HK band, for now it is hardcoded
-
     set wave "YJ"
     set pol "CIRCULAR"
     set offset "0"
@@ -178,128 +176,126 @@ class croseqTPL_POLNOD {
 		# The current token determines the action
 		#
 		switch $tok {
-		    "A" {
-          loop i 0 $nexpo {
-            # move the decker into the right position for A-position nodding.
-            # [TODO] Verify if it is Pol1 or Pol2, Verify syntax
-            os Setup "-function INS.OPTI8.NAME Pol1"
-            # [TODO] set the right beamsplitter angle. if linear: set tracking, set derotator
-            switch $polmode {
-              "YJC" {
-                os Setup "-function INS.ROT5.POSANG 126"  # rotating the SPU motor
-                os Setup "-function INS.ROT4.MODE STAT INS.ROT4.POSANG 0" # rotating beam-splitter [TODO] check angle offset
-                Expose $tok 1 $fits
-                os Setup "-function INS.ROT4.MODE STAT INS.ROT4.POSANG 180" # rotating beam-splitter [TODO] check angle offset
-                Expose $tok 1 $fits
-                Expose $tok 1 $fits
-                os Setup "-function INS.ROT4.MODE STAT INS.ROT4.POSANG 0" # rotating beam-splitter [TODO] check angle offset
-              }
-              "HKC" {
-                os Setup "-function INS.ROT5.POSANG 42"  # rotating the SPU motor
-                os Setup "-function INS.ROT3.MODE STAT INS.ROT4.POSANG 0" # rotating beam-splitter [TODO] check angle offset
-                Expose $tok 1 $fits
-                os Setup "-function INS.ROT3.MODE STAT INS.ROT4.POSANG 180" # rotating beam-splitter [TODO] check angle offset
-                Expose $tok 1 $fits
-                Expose $tok 1 $fits
-                os Setup "-function INS.ROT3.MODE STAT INS.ROT4.POSANG 0" # rotating beam-splitter [TODO] check angle offset
-              }
-              "YJL" {
-                os Setup "-function INS.ROT5.POSANG 0"  # rotating the SPU motor
-                os Setup "-function INS.ROT2.MODE SKY INS.ROT2.POSANG $offset" # rotating beam-splitter [TODO] check angle offset
-                Expose $tok 1 $fits
-                os Setup "-function INS.ROT2.MODE SKY INS.ROT2.POSANG 180+$offset" # rotating beam-splitter [TODO] check angle offset
-                Expose $tok 1 $fits
-                Expose $tok 1 $fits
-                os Setup "-function INS.ROT2.MODE SKY INS.ROT2.POSANG 0+$offset" # rotating beam-splitter [TODO] check angle offset
-              }
-              "HKL" {
-                os Setup "-function INS.ROT5.POSANG 0"  # rotating the SPU motor
-                os Setup "-function INS.ROT1.MODE SKY INS.ROT2.POSANG $offset" # rotating beam-splitter [TODO] check angle offset
-                Expose $tok 1 $fits
-                os Setup "-function INS.ROT1.MODE SKY INS.ROT2.POSANG 180+$offset" # rotating beam-splitter [TODO] check angle offset
-                Expose $tok 1 $fits
-                Expose $tok 1 $fits
-                os Setup "-function INS.ROT1.MODE SKY INS.ROT2.POSANG 0+$offset" # rotating beam-splitter [TODO] check angle offset
-              }
+      "A" {
+        loop i 0 $nexpo {
+          # move the decker into the right position for A-position nodding.
+          # [TODO] Verify if it is Pol1 or Pol2, Verify syntax
+          os Setup "-function INS.OPTI8.NAME Pol1"
+          # [TODO] set the right beamsplitter angle. if linear: set tracking, set derotator
+          switch $polmode {
+            "YJC" {
+              os Setup "-function INS.ROT5.POSANG 126"  # rotating the SPU motor
+              os Setup "-function INS.ROT4.MODE STAT INS.ROT4.POSANG 0" # rotating beam-splitter [TODO] check angle offset
+              Expose $tok 1 $fits
+              os Setup "-function INS.ROT4.MODE STAT INS.ROT4.POSANG 180" # rotating beam-splitter [TODO] check angle offset
+              Expose $tok 1 $fits
+              Expose $tok 1 $fits
+              os Setup "-function INS.ROT4.MODE STAT INS.ROT4.POSANG 0" # rotating beam-splitter [TODO] check angle offset
             }
-          } #end of nexpo loop
-		    } # end of "A" case loop
-
-        "B" {
-          loop i 0 $nexpo {
-            # move the decker into the right position for B-pos nodding
-            [TODO] Verify if it is Pol1 or Pol2, Verify syntax
-            os Setup "-function INS.OPTI8.NAME Pol2"
-            # [TODO] set the right beamsplitter angle. if linear: set tracking, set derotator
-            switch $polmode {
-              "YJC" {
-                os Setup "-function INS.ROT5.POSANG 126"  # rotating the SPU motor
-                os Setup "-function INS.ROT4.MODE STAT INS.ROT4.POSANG 0" # rotating beam-splitter [TODO] check angle offset
-                Expose $tok 1 $fits
-                os Setup "-function INS.ROT4.MODE STAT INS.ROT4.POSANG 180" # rotating beam-splitter [TODO] check angle offset
-                Expose $tok 1 $fits
-                Expose $tok 1 $fits
-                os Setup "-function INS.ROT4.MODE STAT INS.ROT4.POSANG 0" # rotating beam-splitter [TODO] check angle offset
-              }
-              "HKC" {
-                os Setup "-function INS.ROT5.POSANG 42"  # rotating the SPU motor
-                os Setup "-function INS.ROT3.MODE STAT INS.ROT4.POSANG 0" # rotating beam-splitter [TODO] check angle offset
-                Expose $tok 1 $fits
-                os Setup "-function INS.ROT3.MODE STAT INS.ROT4.POSANG 180" # rotating beam-splitter [TODO] check angle offset
-                Expose $tok 1 $fits
-                Expose $tok 1 $fits
-                os Setup "-function INS.ROT3.MODE STAT INS.ROT4.POSANG 0" # rotating beam-splitter [TODO] check angle offset
-              }
-              "YJL" {
-                os Setup "-function INS.ROT5.POSANG 0"  # rotating the SPU motor
-                os Setup "-function INS.ROT2.MODE SKY INS.ROT2.POSANG $offset" # rotating beam-splitter [TODO] check angle offset
-                Expose $tok 1 $fits
-                os Setup "-function INS.ROT2.MODE SKY INS.ROT2.POSANG 180+$offset" # rotating beam-splitter [TODO] check angle offset
-                Expose $tok 1 $fits
-                Expose $tok 1 $fits
-                os Setup "-function INS.ROT2.MODE SKY INS.ROT2.POSANG 0+$offset" # rotating beam-splitter [TODO] check angle offset
-              }
-              "HKL" {
-                os Setup "-function INS.ROT5.POSANG 0"  # rotating the SPU motor
-                os Setup "-function INS.ROT1.MODE SKY INS.ROT2.POSANG $offset" # rotating beam-splitter [TODO] check angle offset
-                Expose $tok 1 $fits
-                os Setup "-function INS.ROT1.MODE SKY INS.ROT2.POSANG 180+$offset" # rotating beam-splitter [TODO] check angle offset
-                Expose $tok 1 $fits
-                Expose $tok 1 $fits
-                os Setup "-function INS.ROT1.MODE SKY INS.ROT2.POSANG 0+$offset" # rotating beam-splitter [TODO] check angle offset
-              }
+            "HKC" {
+              os Setup "-function INS.ROT5.POSANG 42"  # rotating the SPU motor
+              os Setup "-function INS.ROT3.MODE STAT INS.ROT4.POSANG 0" # rotating beam-splitter [TODO] check angle offset
+              Expose $tok 1 $fits
+              os Setup "-function INS.ROT3.MODE STAT INS.ROT4.POSANG 180" # rotating beam-splitter [TODO] check angle offset
+              Expose $tok 1 $fits
+              Expose $tok 1 $fits
+              os Setup "-function INS.ROT3.MODE STAT INS.ROT4.POSANG 0" # rotating beam-splitter [TODO] check angle offset
             }
-          } #end of nexpo loop
-		    } # end of "B" case loop
+            "YJL" {
+              os Setup "-function INS.ROT5.POSANG 0"  # rotating the SPU motor
+              os Setup "-function INS.ROT2.MODE SKY INS.ROT2.POSANG $offset" # rotating beam-splitter [TODO] check angle offset
+              Expose $tok 1 $fits
+              os Setup "-function INS.ROT2.MODE SKY INS.ROT2.POSANG 180+$offset" # rotating beam-splitter [TODO] check angle offset
+              Expose $tok 1 $fits
+              Expose $tok 1 $fits
+              os Setup "-function INS.ROT2.MODE SKY INS.ROT2.POSANG 0+$offset" # rotating beam-splitter [TODO] check angle offset
+            }
+            "HKL" {
+              os Setup "-function INS.ROT5.POSANG 0"  # rotating the SPU motor
+              os Setup "-function INS.ROT1.MODE SKY INS.ROT2.POSANG $offset" # rotating beam-splitter [TODO] check angle offset
+              Expose $tok 1 $fits
+              os Setup "-function INS.ROT1.MODE SKY INS.ROT2.POSANG 180+$offset" # rotating beam-splitter [TODO] check angle offset
+              Expose $tok 1 $fits
+              Expose $tok 1 $fits
+              os Setup "-function INS.ROT1.MODE SKY INS.ROT2.POSANG 0+$offset" # rotating beam-splitter [TODO] check angle offset
+            }
+          }
+        }
+      }
 
-		    "P" {
-			# positive nod throw (combined offset)
-			OffsetAlongSlit $tok [$nodThrow]
-			# nodding delay
-			os Uif Sleep $nodDelay
-		    }
+      "B" {
+        loop i 0 $nexpo {
+          # move the decker into the right position for B-pos nodding
+          [TODO] Verify if it is Pol1 or Pol2, Verify syntax
+          os Setup "-function INS.OPTI8.NAME Pol2"
+          # [TODO] set the right beamsplitter angle. if linear: set tracking, set derotator
+          switch $polmode {
+            "YJC" {
+              os Setup "-function INS.ROT5.POSANG 126"  # rotating the SPU motor
+              os Setup "-function INS.ROT4.MODE STAT INS.ROT4.POSANG 0" # rotating beam-splitter [TODO] check angle offset
+              Expose $tok 1 $fits
+              os Setup "-function INS.ROT4.MODE STAT INS.ROT4.POSANG 180" # rotating beam-splitter [TODO] check angle offset
+              Expose $tok 1 $fits
+              Expose $tok 1 $fits
+              os Setup "-function INS.ROT4.MODE STAT INS.ROT4.POSANG 0" # rotating beam-splitter [TODO] check angle offset
+            }
+            "HKC" {
+              os Setup "-function INS.ROT5.POSANG 42"  # rotating the SPU motor
+              os Setup "-function INS.ROT3.MODE STAT INS.ROT4.POSANG 0" # rotating beam-splitter [TODO] check angle offset
+              Expose $tok 1 $fits
+              os Setup "-function INS.ROT3.MODE STAT INS.ROT4.POSANG 180" # rotating beam-splitter [TODO] check angle offset
+              Expose $tok 1 $fits
+              Expose $tok 1 $fits
+              os Setup "-function INS.ROT3.MODE STAT INS.ROT4.POSANG 0" # rotating beam-splitter [TODO] check angle offset
+            }
+            "YJL" {
+              os Setup "-function INS.ROT5.POSANG 0"  # rotating the SPU motor
+              os Setup "-function INS.ROT2.MODE SKY INS.ROT2.POSANG $offset" # rotating beam-splitter [TODO] check angle offset
+              Expose $tok 1 $fits
+              os Setup "-function INS.ROT2.MODE SKY INS.ROT2.POSANG 180+$offset" # rotating beam-splitter [TODO] check angle offset
+              Expose $tok 1 $fits
+              Expose $tok 1 $fits
+              os Setup "-function INS.ROT2.MODE SKY INS.ROT2.POSANG 0+$offset" # rotating beam-splitter [TODO] check angle offset
+            }
+            "HKL" {
+              os Setup "-function INS.ROT5.POSANG 0"  # rotating the SPU motor
+              os Setup "-function INS.ROT1.MODE SKY INS.ROT2.POSANG $offset" # rotating beam-splitter [TODO] check angle offset
+              Expose $tok 1 $fits
+              os Setup "-function INS.ROT1.MODE SKY INS.ROT2.POSANG 180+$offset" # rotating beam-splitter [TODO] check angle offset
+              Expose $tok 1 $fits
+              Expose $tok 1 $fits
+              os Setup "-function INS.ROT1.MODE SKY INS.ROT2.POSANG 0+$offset" # rotating beam-splitter [TODO] check angle offset
+            }
+          }
+        }
+      }
 
-		    "N" {
-			# negative nod throw (combined offset back)
-			OffsetAlongSlit $tok [expr {0.0 - $nodThrow}]
-			# nodding delay
-			os Uif Sleep $nodDelay
-		    }
+      "P" {
+			   # positive nod throw (combined offset)
+         OffsetAlongSlit $tok [$nodThrow]
+         # nodding delay
+         os Uif Sleep $nodDelay
+        }
 
-		    "S" {
-			OffsetAlongSlit $tok [expr {$nodThrow / 2.0}]
-			# nodding delay
-			os Uif Sleep $nodDelay
-		    }
+        "N" {
+          # negative nod throw (combined offset back)
+          OffsetAlongSlit $tok [expr {0.0 - $nodThrow}]
+          # nodding delay
+          os Uif Sleep $nodDelay
+        }
 
-		    default {
-			error "Unknown token '$tok'"
-		    }
-		}
-	    }
+        "S" {
+          OffsetAlongSlit $tok [expr {$nodThrow / 2.0}]
+          # nodding delay
+          os Uif Sleep $nodDelay
+        }
 
-	    # move back to the origin before starting next loop
+        default {
+          error "Unknown token '$tok'"
+        }
+      }
     }
+  }
 
 
     #-----------------------------------------------------------------------

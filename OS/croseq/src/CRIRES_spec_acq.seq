@@ -539,6 +539,7 @@ class croseqTPL_ACQ {
         seeBobVars -localcopy OBS
         seeBobVars -localcopy TPL
 
+  # [TODO] Check the eventual FITS header that need to be changed for polarized exposures
 	set txt "PAF.HDR.START;\n"
 	append txt "PAF.TYPE         \"Reference Setup\";\n"
 	append txt "PAF.ID           \"croseqSkyFlat.ref\"\n"
@@ -602,6 +603,10 @@ class croseqTPL_ACQ {
     	tplSeeVars
 
       	#= 1. use popup panel
+  # [TODO] SvRtdShow is probably what we need to change in the case of two polarized images.
+  # [TODO] there's commented out commands within SvRtdshow, looks like it does nothing, perhaps work in progress:
+  # tplMsgCall "" crortdSv_NGCIR2 SCRIPT "do_cmd SHOW_DRAW $args"
+  # SHOW_DRAW seems to be contained in OS/crortd/src/crortdSvUtil.tcl
 	SvRtdShow WFS_CENTER
 	tplLog "Center the $ngsTxt using the acq. popup panel"
 	tplLog "(Press the popup panel Continue button to continue the template)."

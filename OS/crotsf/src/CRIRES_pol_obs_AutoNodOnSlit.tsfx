@@ -14,7 +14,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
 
 PAF.HDR.START;
-PAF.ID                  "$Id: CRIRES_pol_obs_AutoNodOnSlit.tsfx $"
+PAF.ID                  "$Id: CRIRES_pol_obs_AutoNodOnSlit.tsfx 321254 2019-04-18 13:16:47Z ccumani $"
 PAF.DESC                "Nodding along slit using jitter";
 PAF.CRTE.NAME           "tmarquar";
 PAF.CRTE.DAYTIM         "29-Nov-2018";

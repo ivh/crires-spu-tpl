@@ -1,7 +1,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # E.S.O. - VLT project
 #
-# "@(#) $Id: CRIRES_pol_obs_AutoNodOnSlit.seq 315705 2018-11-07 16:16:04Z ccumani $"
+# "@(#) $Id: CRIRES_pol_obs_AutoNodOnSlit.seq 321254 2019-04-18 13:16:47Z ccumani $"
 #
 # who       when        what
 # --------  ----------  -------------------------------------------------------
@@ -87,7 +87,7 @@ class croseqTPL_POLNOD {
 	set nexpo        $SEQ(NEXPO)
 	set nodThrow     $SEQ(NODTHROW)
 	set nodDelay     $SEQ(NOD.DELAY)
-  set pol          $INS(POL.NAME)
+        set pol          $INS(POL.NAME)
 	# total number of exposures: 2 exposures per AB cycles * n_exposures set by user * 4 polarimetric sub-exposures
 	set TPL(NEXP) [expr {$nexpo * $nAB * 2 * 4 }]
 
@@ -135,7 +135,7 @@ class croseqTPL_POLNOD {
 	set insMode "INS.MODE $TPL(MODE)"
 
 
-  loop i 0 [string length $seqL] {
+        loop i 0 [string length $seqL] {
 		checkAbortFlag
 
 		# current token from sequence string

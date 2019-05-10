@@ -20,3 +20,4 @@
 !OS/croseq/src/
 !OS/croseq/src/CRIRES_pol_obs_AutoNodOnSlit.seq
 !OS/croseq/src/CRIRES_spec_acq.seq
+!OS/crotsf/include/crotsfSEQ_POLNODTHROW.tsfx

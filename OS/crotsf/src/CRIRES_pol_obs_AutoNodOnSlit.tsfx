@@ -58,6 +58,7 @@ PAF.INCLUDE		        "crotsfDET1_NCORRS_NAME.tsfx";
 PAF.INCLUDE             "crotsfSEQ_NABCYCLES.tsfx";
 # include instead the dedicated .tsfx file setting fixed nod throw for pol mode
 PAF.INCLUDE		"crotsfSEQ_POLNODTHROW.tsfx"
-#
+# include the name of the polarimeter's beam splitter
+PAF.INCLUDE     "crotsfINS_POL.tsfx"
 #___oOo___
 

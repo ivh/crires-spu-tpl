@@ -115,9 +115,6 @@ class croseqTPL_POLNOD {
 
 	loop i 0 $SEQ(NEXPO) {
             
-            # rotating the SPU motor
-            os Setup "-function INS1.ROT5.NAME $turretPos"  
-
 	    #rotatin beam-splitter and taking exposure
             # TODO : where do we get the offset from ?
             os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG $posAng" 

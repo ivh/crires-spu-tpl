@@ -14,12 +14,12 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
 
 PAF.HDR.START;
-PAF.ID                  "$Id: CRIRES_pol_obs_AutoNodOnSlit.tsfx 321254 2019-04-18 13:16:47Z ccumani $"
+PAF.ID                  "$Id: CRIRES_pol_obs_AutoNodOnSlit.tsfx 321943 2019-05-22 07:43:35Z ccumani $"
 PAF.DESC                "Nodding along slit using jitter";
 PAF.CRTE.NAME           "tmarquar";
 PAF.CRTE.DAYTIM         "29-Nov-2018";
 PAF.LCHG.NAME           "tmarquar";                # Who made last change
-PAF.LCHG.DAYTIM         "2018-11-29 12:00";        # Date and time of last change 
+PAF.LCHG.DAYTIM         "2019-05-22 10:00";        # Date and time of last change 
 PAF.HDR.END;
  
 #------------------------------------------------------------------------
@@ -29,6 +29,7 @@ TPL.REFSUP              "CRIRES_spec_obs.ref";
 TPL.PRESEQ              "CRIRES_pol_obs_AutoNodOnSlit.seq";
 TPL.TYPE                "science";
 TPL.MODE                "Spectroscopy";
+TPL.NAME		"Polarimeter sequence, switching beams and nodding with deckers";
 
 #------------------------------------------------------------------------
 #
@@ -53,12 +54,19 @@ PAF.INCLUDE		        "crotsfSEQ_RETURN.tsfx";
 PAF.INCLUDE		        "crotsfSEQ_NOD_DELAY.tsfx";
 PAF.INCLUDE		        "crotsfSEQ_FLUX_TOLERANCE.tsfx";
 PAF.INCLUDE		        "crotsfDET1_NCORRS_NAME.tsfx";
+PAF.INCLUDE		        "crotsfINS_POLTYPE.tsfx";
 
 # only include this instead of _NODDING because we don't need nodthrow or jitter
 PAF.INCLUDE             "crotsfSEQ_NABCYCLES.tsfx";
 # include instead the dedicated .tsfx file setting fixed nod throw for pol mode
-PAF.INCLUDE		"crotsfSEQ_POLNODTHROW.tsfx"
-# include the name of the polarimeter's beam splitter
-PAF.INCLUDE     "crotsfINS_POL.tsfx"
+PAF.INCLUDE		"crotsfSEQ_NODDING.tsfx"
+PAF.INCLUDE		"crotsfINS_POL_ROT_POSANG.tsfx"
+
+SEQ.JITTER.WIDTH.RANGE    "0..0"
+SEQ.NODTHROW.DEFAULT    "2.5";
+SEQ.NODTHROW.RANGE      "2.5..2.5";
+SEQ.NABCYCLES.DEFAULT   "0";
+
+#
 #___oOo___
 

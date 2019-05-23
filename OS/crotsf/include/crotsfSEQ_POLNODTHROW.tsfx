@@ -1,7 +1,7 @@
 #******************************************************************************
 # E.S.O. - VLT project
 #
-# "@(#) $Id: crotsfSEQ_POLNODTHROW.tsfx 321254 2019-04-18 13:16:47Z ccumani $"
+# "@(#) $Id: crotsfSEQ_POLNODTHROW.tsfx 321812 2019-05-17 13:19:46Z cmoins $"
 #
 # who       when      what
 # --------  --------  ----------------------------------------------
@@ -18,7 +18,7 @@
 TPL.PARAM               "SEQ.NODTHROW";
 SEQ.NODTHROW.TYPE       "number";
 SEQ.NODTHROW.RANGE      "2.5";
-SEQ.NODTHROW.DEFAULT    "2,5";
+SEQ.NODTHROW.DEFAULT    "2.5";
 SEQ.NODTHROW.LABEL      "Nod throw along the slit";
 SEQ.NODTHROW.MINIHELP   "Nod throw along the slit in arcsec";
  

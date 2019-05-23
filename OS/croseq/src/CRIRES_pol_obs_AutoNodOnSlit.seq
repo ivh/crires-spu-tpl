@@ -1,7 +1,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # E.S.O. - VLT project
 #
-# "@(#) $Id: CRIRES_pol_obs_AutoNodOnSlit.seq 315705 2018-11-07 16:16:04Z ccumani $"
+# "@(#) $Id: CRIRES_pol_obs_AutoNodOnSlit.seq 321865 2019-05-20 13:51:49Z ccumani $"
 #
 # who       when        what
 # --------  ----------  -------------------------------------------------------
@@ -48,403 +48,109 @@ proc CRIRES_pol_obs_AutoNodOnSlit { } {
     return ""
 }
 
+global croseqClass
+catch { delete class $croseqClass }
+set croseqClass "croseqTPL_POLNOD"
 
 #---------------------------------------------------------------------------
 # class croseqTPL_AUTONODONSLIT
 #
-global croseqClass
-catch { delete class $croseqClass }
-set croseqClass "croseqTPL_POLNOD"
+#global croseqClass
+#catch { delete class $croseqClass }
+#set croseqClass "croseqTPL_POLNOD"
 class croseqTPL_POLNOD {
+    inherit croseqTPL_AUTONODONSLIT
 
-    #-----------------------------------------------------------------------
-    # Execute template
-    #
-    public method Execute {} {
-	seeBobVars
+    constructor {} {
+    }
 
-	# execute main part of the template
-	Begin
-	tplTry {
-	    Main
-	} {
-	    # return to initial target position
-            Cleanup $SEQ(RETURN)
-	    # wait for all exposures to be archived properly
-	    if { $expsDone } { os Wait "-all" }
+    # In the polarimetric case, the others parameter correspond
+    protected method Expose { tok nrep fits {nodPos "NONE"}} {
+        seeBobVars
+        set wave [seq_dbReadSymbolic "<alias>WLEN.filt2" ]
+        set posAng $INS(ROT.POSANG)
+        set polMode $INS(POL.TYPE) 
+	set bsIdx -1
+	set rotAngle 0
+	set dbAlias "NONE"
+
+        if { $wave == "YJ" && $polMode == "CIRCULAR"} {
+            set bsIdx 4
+	    set derotatorMode "STAT"
+	    set turretPos "YJ_circular"
+	    set rotAngle 180
+	    set dbAlias "<alias>POLC2"
+        } elseif { $wave == "HK" && $polMode == "CIRCULAR"} {
+            set bsIdx 3
+	    set derotatorMode "STAT"
+	    set turretPos "HK_circular"
+	    set rotAngle 180
+	    set dbAlias "<alias>POLC1"
+        } elseif { $wave == "YJ" && $polMode == "LINEAR"} {
+            set bsIdx 2
+	    set derotatorMode "SKY"
+	    set turretPos "YJ_linear"
+	    set rotAngle 90
+	    set dbAlias "<alias>POLL2"
+        }  elseif { $wave == "HK" && $polMode == "LINEAR"} {
+            set bsIdx 1
+	    set derotatorMode "SKY"
+	    set turretPos "HK_linear"
+	    set rotAngle 90
+	    set dbAlias "<alias>POLL1"
+        } else {
+	    error  "case wave $wave and polarimetric mode $polMode is not supported"
+	}
+
+        #TODO check that decker position are correct
+	set deckerPos("A") "Dek13"
+	set deckerPos("B") "Dek24"
+
+        tplLog "polarisation mode: $polMode, wave: $wave, derotator mode: $derotatorMode"
+        tplLog "Starting taking $SEQ(NEXPO) exposures for position $nodPos"
+
+        # move the decker into the right position for the current nodding position
+        tplLog "Moving decker to  $deckerPos("$nodPos")"
+        os Setup "-function INS.OPTI8.NAME $deckerPos("$nodPos")"
+
+	loop i 0 $SEQ(NEXPO) {
+            
+            # rotating the SPU motor
+            os Setup "-function INS1.ROT5.NAME $turretPos"  
+
+	    #rotatin beam-splitter and taking exposure
+            # TODO : where do we get the offset from ?
+            os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG $posAng" 
+            ExposeOnce $fits
+            # the rotation is done from the current Beam splitter position (only matters for linear case)
+            set curAngle [seq_dbReadSymbolic "$dbAlias.status2"]
+	    tplLog "Current position is $curAngle"
+            os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG [expr $curAngle+$rotAngle]" 
+            ExposeOnce $fits
+            ExposeOnce $fits
+            # we rotate backwards from the current beam splitter position (that only changes for the linear case)
+            set curAngle [seq_dbReadSymbolic "$dbAlias.status2"]
+            os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG [expr $curAngle-$rotAngle]" 
+            ExposeOnce $fits
 	}
     }
 
-
-    #-----------------------------------------------------------------------
-    # Main - Main template proc
-    #
-    protected method Main {} {
-	seeBobVars
-
-	set nAB          $SEQ(NABCYCLES)
-	# number of exposures per offset position
-	set nexpo        $SEQ(NEXPO)
-	set nodThrow     $SEQ(NODTHROW)
-	set nodDelay     $SEQ(NOD.DELAY)
-  set pol          $INS(POL.NAME)
-	# total number of exposures: 2 exposures per AB cycles * n_exposures set by user * 4 polarimetric sub-exposures
-	set TPL(NEXP) [expr {$nexpo * $nAB * 2 * 4 }]
-
-	# set DPR.TECH according to spec.
-	set tech "SPECTRUM"
-	if { $DPR(TYPE) == "WAVE" } {
-	    set tech "SPECTRUM,NODDING"
-	    if { $nodThrow == 0 || $nAB == 0  } {set tech "SPECTRUM,DIRECT"  }
-	} elseif { $nAB == 0 } {
-	    set tech "SPECTRUM,DIRECT,OTHER"
-	} else {
-	    if { $nodThrow == 0} {set tech "SPECTRUM,DIRECT,OTHER"}
-	    if { $nodThrow >  0} {set tech "SPECTRUM,NODDING,OTHER"}
-	}
-	set DPR(TECH) $tech
-
-
-	#---------------------------------------------------------------
-	# Generate sequence list (list of tokens)
-	#
-	# Tokens:
-	#   "S"   start
-	#   "A"   position ('Object')
-	#   "B"   position ('Sky')
-	#   "P"   positive nod throw
-	#   "N"   negative nod throw
-	#
-
-	# start: step half throw "P"
-	set seqL "S"
-
-	# generate sequence list (list of tokens)
-	loop i 0 $nAB {
-	    append seqL [expr {$i % 2 == 0 ? "ANB" : "BPA"}]
-	}
-
-	# if mode staring: at least 1 exposure (Object)
-	if { $nAB == 0 } {
-	    set TPL(NEXP) expr {$nexpo * 4}
-	    set seqL "A"
-	}
-
-	#---------------------------------------------------------------
-	#
-	set insMode "INS.MODE $TPL(MODE)"
-
-
-  loop i 0 [string length $seqL] {
-    checkAbortFlag
-
-		# current token from sequence string
-		set tok [string index $seqL $i]
-
-		#--------------------------------------------------------------------
-		# For exposures add FITS keys
-		#
-		if { "$tok" == "A" || "$tok" == "B" } {
-
-      lassign [CumOffset $sumOffset_] px py
-	    set fits "\
-			SEQ.NODTHROW     $nodThrow \
-			SEQ.NABCYCLES    $nAB \
-			SEQ.CUMOFFSETX   $px \
-			SEQ.CUMOFFSETY   $py \
-			SEQ.NODPOS       $tok"
-		}
-    #--------------------------------------------------------------------
-    # checking the polarization type and wavelength band to generate a polmode token
-    # [TODO]: check how to get the YJ or HK band, for now it is hardcoded
-    set wave "YJ"
-    set pol "CIRCULAR"
-    set offset "0"
-    if { $wave == "YJ" AND $pol == "CIRCULAR"} {
-      set polmode "YJC"
+    protected method getExposureNb { nexpo nAB numOuterLoop } {
+      return [expr {$nexpo * $nAB * 2 * $numOuterLoop * 4}]
     }
-    if { $wave == "HK" AND $pol == "CIRCULAR"} {
-      set polmode "HKC"
-    }
-    if { $wave == "YJ" AND $pol == "LINEAR"} {
-      set polmode "YJL"
-    }
-    if { $wave == "HK" AND $pol == "LINEAR"} {
-      set polmode "HKL"
-    }
-		#--------------------------------------------------------------------
-		# The current token determines the action
-		#
-		switch $tok {
-      "A" {
-        loop i 0 $nexpo {
-          # move the decker into the right position for A-position nodding.
-          # [TODO] Verify if it is Pol1 or Pol2, Verify syntax
-          os Setup "-function INS.OPTI8.NAME Pol1"
-          # [TODO] set the right beamsplitter angle. if linear: set tracking, set derotator
-          switch $polmode {
-            "YJC" {
-              os Setup "-function INS.ROT5.POSANG 126"  # rotating the SPU motor
-              os Setup "-function INS.ROT4.MODE STAT INS.ROT4.POSANG 0" # rotating beam-splitter [TODO] check angle offset
-              Expose $tok 1 $fits
-              os Setup "-function INS.ROT4.MODE STAT INS.ROT4.POSANG 180" # rotating beam-splitter [TODO] check angle offset
-              Expose $tok 1 $fits
-              Expose $tok 1 $fits
-              os Setup "-function INS.ROT4.MODE STAT INS.ROT4.POSANG 0" # rotating beam-splitter [TODO] check angle offset
-            }
-            "HKC" {
-              os Setup "-function INS.ROT5.POSANG 42"  # rotating the SPU motor
-              os Setup "-function INS.ROT3.MODE STAT INS.ROT4.POSANG 0" # rotating beam-splitter [TODO] check angle offset
-              Expose $tok 1 $fits
-              os Setup "-function INS.ROT3.MODE STAT INS.ROT4.POSANG 180" # rotating beam-splitter [TODO] check angle offset
-              Expose $tok 1 $fits
-              Expose $tok 1 $fits
-              os Setup "-function INS.ROT3.MODE STAT INS.ROT4.POSANG 0" # rotating beam-splitter [TODO] check angle offset
-            }
-            "YJL" {
-              os Setup "-function INS.ROT5.POSANG 0"  # rotating the SPU motor
-              os Setup "-function INS.ROT2.MODE SKY INS.ROT2.POSANG $offset" # rotating beam-splitter [TODO] check angle offset
-              Expose $tok 1 $fits
-              os Setup "-function INS.ROT2.MODE SKY INS.ROT2.POSANG 180+$offset" # rotating beam-splitter [TODO] check angle offset
-              Expose $tok 1 $fits
-              Expose $tok 1 $fits
-              os Setup "-function INS.ROT2.MODE SKY INS.ROT2.POSANG 0+$offset" # rotating beam-splitter [TODO] check angle offset
-            }
-            "HKL" {
-              os Setup "-function INS.ROT5.POSANG 0"  # rotating the SPU motor
-              os Setup "-function INS.ROT1.MODE SKY INS.ROT2.POSANG $offset" # rotating beam-splitter [TODO] check angle offset
-              Expose $tok 1 $fits
-              os Setup "-function INS.ROT1.MODE SKY INS.ROT2.POSANG 180+$offset" # rotating beam-splitter [TODO] check angle offset
-              Expose $tok 1 $fits
-              Expose $tok 1 $fits
-              os Setup "-function INS.ROT1.MODE SKY INS.ROT2.POSANG 0+$offset" # rotating beam-splitter [TODO] check angle offset
-            }
-          }
-        }
-      }
-
-      "B" {
-        loop i 0 $nexpo {
-          # move the decker into the right position for B-pos nodding
-          [TODO] Verify if it is Pol1 or Pol2, Verify syntax
-          os Setup "-function INS.OPTI8.NAME Pol2"
-          # [TODO] set the right beamsplitter angle. if linear: set tracking, set derotator
-          switch $polmode {
-            "YJC" {
-              os Setup "-function INS.ROT5.POSANG 126"  # rotating the SPU motor
-              os Setup "-function INS.ROT4.MODE STAT INS.ROT4.POSANG 0" # rotating beam-splitter [TODO] check angle offset
-              Expose $tok 1 $fits
-              os Setup "-function INS.ROT4.MODE STAT INS.ROT4.POSANG 180" # rotating beam-splitter [TODO] check angle offset
-              Expose $tok 1 $fits
-              Expose $tok 1 $fits
-              os Setup "-function INS.ROT4.MODE STAT INS.ROT4.POSANG 0" # rotating beam-splitter [TODO] check angle offset
-            }
-            "HKC" {
-              os Setup "-function INS.ROT5.POSANG 42"  # rotating the SPU motor
-              os Setup "-function INS.ROT3.MODE STAT INS.ROT4.POSANG 0" # rotating beam-splitter [TODO] check angle offset
-              Expose $tok 1 $fits
-              os Setup "-function INS.ROT3.MODE STAT INS.ROT4.POSANG 180" # rotating beam-splitter [TODO] check angle offset
-              Expose $tok 1 $fits
-              Expose $tok 1 $fits
-              os Setup "-function INS.ROT3.MODE STAT INS.ROT4.POSANG 0" # rotating beam-splitter [TODO] check angle offset
-            }
-            "YJL" {
-              os Setup "-function INS.ROT5.POSANG 0"  # rotating the SPU motor
-              os Setup "-function INS.ROT2.MODE SKY INS.ROT2.POSANG $offset" # rotating beam-splitter [TODO] check angle offset
-              Expose $tok 1 $fits
-              os Setup "-function INS.ROT2.MODE SKY INS.ROT2.POSANG 180+$offset" # rotating beam-splitter [TODO] check angle offset
-              Expose $tok 1 $fits
-              Expose $tok 1 $fits
-              os Setup "-function INS.ROT2.MODE SKY INS.ROT2.POSANG 0+$offset" # rotating beam-splitter [TODO] check angle offset
-            }
-            "HKL" {
-              os Setup "-function INS.ROT5.POSANG 0"  # rotating the SPU motor
-              os Setup "-function INS.ROT1.MODE SKY INS.ROT2.POSANG $offset" # rotating beam-splitter [TODO] check angle offset
-              Expose $tok 1 $fits
-              os Setup "-function INS.ROT1.MODE SKY INS.ROT2.POSANG 180+$offset" # rotating beam-splitter [TODO] check angle offset
-              Expose $tok 1 $fits
-              Expose $tok 1 $fits
-              os Setup "-function INS.ROT1.MODE SKY INS.ROT2.POSANG 0+$offset" # rotating beam-splitter [TODO] check angle offset
-            }
-          }
-        }
-      }
-
-      "P" {
-			   # positive nod throw (combined offset)
-         OffsetAlongSlit $tok [$nodThrow]
-         # nodding delay
-         os Uif Sleep $nodDelay
-        }
-
-        "N" {
-          # negative nod throw (combined offset back)
-          OffsetAlongSlit $tok [expr {0.0 - $nodThrow}]
-          # nodding delay
-          os Uif Sleep $nodDelay
-        }
-
-        "S" {
-          OffsetAlongSlit $tok [expr {$nodThrow / 2.0}]
-          # nodding delay
-          os Uif Sleep $nodDelay
-        }
-
-        default {
-          error "Unknown token '$tok'"
-        }
-      }
-    }
-  }
-
-
-    #-----------------------------------------------------------------------
-    # OffsetAlongSlit - combined offset along the slit
-    #
-    protected method OffsetAlongSlit { tok offset } {
-	if { $offset == 0 } {return}
-
-	#= 1. convert offset along the slit in Alpha,Delta offset
-	tplLog "Offsetting along the slit ...: [format %.3f $offset] (arcsec)"
-	set angleOnSky [os GetAngleOnSky]
-	set angleOnSky [expr {$angleOnSky * atan(1) / 45.0}]
-	set da [expr {-1.0 * $offset * sin($angleOnSky)}]
-	set dd [expr {-1.0 * $offset * cos($angleOnSky)}]
-	if { abs($da) < 0.0001 } { set da 0.0 }
-	if { abs($dd) < 0.0001 } { set dd 0.0 }
-
-	#= 2. perform offset
-	os Offsadg $da $dd
-
-	#= 4. update accumulated offset
-	tplIncr sumOffset_ $offset
-    }
-
 
     #-----------------------------------------------------------------------
     # Expose - run nrep exposures
     #
-    protected method Expose { tok nrep fits } {
+    private method ExposeOnce { fits } {
 	seeBobVars
-	tplLog "Position $tok ..." blue 0 LightYellow
-
-	# foreach nexpo exposures:
-	loop i 0 $nrep {
-	    if { $expsDone } { os Wait "-all" }
-	    tplLog ""
-	    checkAbortFlag
-	    os Setup "-function INS.MODE $TPL(MODE) OCS.DET1.IMGNAME [os ImgName]"
-	    os AddFits $fits
-	    os Start
-	    set expsDone 1
-	    os Wait "-cond CanStartNextObs"
-	}
+	os Setup "-function INS.MODE $TPL(MODE) OCS.DET1.IMGNAME [os ImgName]"
+	os AddFits $fits
+	os Start
+	os Wait "-cond CanStartNextObs"
     }
 
 
-    #-----------------------------------------------------------------------
-    # Cleanup - cleanup before returning from template
-    #
-    protected method Cleanup { ret } {
-
-	# if disabled by user: do nothing
-	if { ! $ret } {return}
-
-	# go back to initial position
-	OffsetAlongSlit "C" [expr {0.0 - $sumOffset_}]
-	set sumOffset_ 0.0
-
-  # return decker to open position
-  os Setup "-function INS.OPTI8.NAME Open"
-    }
-
-
-
-    #-----------------------------------------------------------------------
-    # constructor
-    #
-    constructor {} {
-    	set scidet_ysecpix [os Cfg1 Get INS.SCIDET.YSECPIX]
-    }
-
-    ## included TCL-file ended here.
-
-    #-----------------------------------------------------------------------
-    # Begin
-    #
-    public method Begin {} {
-	seeBobVars
-	os Begin
-
-        # ~~~~~~~~~~~~~~~~~~
-        # Detector Setup (A)
-        # ~~~~~~~~~~~~~~~~~~
-        set det1setupA [os Dcs1 GenDet1SetupA $DET1(READ.CURNAME)]
-	os Setup "-function $det1setupA"
-
-	# ~~~~~~~~~~~~~~
-	# SETUP and init
-	# ~~~~~~~~~~~~~~
-
-	# restore device positions (calibrations may have moved them)
-	os ObsDevicesRestore
-
-	# save SV guiding state
-	set isGuiding [os IsGuiding]
-
-
-	# if moving carriage, suspend AO loop
-	set suspended 0
-	set carrg [os GetMaccStatus "INS.OPTI1.NAME"]
-	if { $carrg != $INS(OPTI1.NAME) && [os IsLoopClosed] } {
-	    os Macao Suspend
-	    set suspended 1
-	}
-	set carrg $INS(OPTI1.NAME)
-	# also center the target star while AO loop is suspended
-	os CenterTarget
-	os Setup "-file $TPL(REFSUP)"
-	os Setup "-function INS.MODE $TPL(MODE) \
-	    INS1.OPTI1.NAME $carrg \
-	    INS.WLEN.CWLEN $INS(WLEN.CWLEN) \
-	    [os Dcs1 GetIntTime]"
-	if { $suspended } {
-	    os Macao Resume
-	}
-
-	# close AO loop and enable SV guiding
-	croseqAOLoopCheckAndClose
-	os Setup "-function OCS.CON.EGUIDE $isGuiding"
-
-	# send observing wavelength to the telescope
-	checkAbortFlag
-	os Tcs Setlam $INS(WLEN.CWLEN)
-
-	# allow the user to adjust DIT and NDIT
-	lassign [os Dcs1 GetIntTime] dummy1 dit dummy2 ndit
-	lassign [os Uif AdjustDitNdit $dit $ndit] abort
-
-
-	if { $abort } { ::bob::bobAbort }
-	checkAbortFlag
-    }
-
-
-    #-----------------------------------------------------------------------
-    # CumOffset - return SEQ.CUMOFFSETX/Y values
-    #
-    protected method CumOffset { sumOffset } {
-	# accumulated position on the science detector
-	set py [format "%.3f" [expr {$sumOffset / $scidet_ysecpix}]]
-	return [list 0.0 $py]
-    }
-
-    #-----------------------------------------------------------------------
-    # variables
-    #
-    protected variable scidet_ysecpix
-    protected variable sumOffset_ 0.0
-    protected variable expsDone 0
 }
 
 

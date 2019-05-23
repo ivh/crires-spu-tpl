@@ -74,30 +74,50 @@ class croseqTPL_POLNOD {
 	set rotAngle 0
 	set dbAlias "NONE"
 
-        if { $wave == "YJ" && $polMode == "CIRCULAR"} {
+        if { $wave == "YJ" && $polMode == "V"} {
             set bsIdx 4
 	    set derotatorMode "STAT"
 	    set turretPos "YJ_circular"
 	    set rotAngle 180
 	    set dbAlias "<alias>POLC2"
-        } elseif { $wave == "HK" && $polMode == "CIRCULAR"} {
+            set startAngle 0
+        } elseif { $wave == "HK" && $polMode == "V"} {
             set bsIdx 3
 	    set derotatorMode "STAT"
 	    set turretPos "HK_circular"
 	    set rotAngle 180
 	    set dbAlias "<alias>POLC1"
-        } elseif { $wave == "YJ" && $polMode == "LINEAR"} {
+            set startAngle 0
+        } elseif { $wave == "YJ" && $polMode == "Q"} {
             set bsIdx 2
 	    set derotatorMode "SKY"
 	    set turretPos "YJ_linear"
 	    set rotAngle 90
 	    set dbAlias "<alias>POLL2"
-        }  elseif { $wave == "HK" && $polMode == "LINEAR"} {
+            set startAngle 0
+        }  elseif { $wave == "HK" && $polMode == "Q"} {
             set bsIdx 1
 	    set derotatorMode "SKY"
 	    set turretPos "HK_linear"
 	    set rotAngle 90
 	    set dbAlias "<alias>POLL1"
+            set startAngle 0
+        }  elseif { $wave == "YJ" && $polMode == "U"} {
+            set bsIdx 2
+            set derotatorMode "SKY"
+            set turretPos "YJ_linear"
+            set rotAngle 90
+            # [TODO] keeping the same database alias for Q and U at the moment. I believe they are motor-specific.
+            set dbAlias "<alias>POLL2"
+            # [TODO] make sure the angle is +45 or -45
+            set startAngle 45
+        }  elseif { $wave == "HK" && $polMode == "U"} {
+            set bsIdx 1
+            set derotatorMode "SKY"
+            set turretPos "HK_linear"
+            set rotAngle 90
+            set dbAlias "<alias>POLU1"
+            set startAngle 45
         } else {
 	    error  "case wave $wave and polarimetric mode $polMode is not supported"
 	}
@@ -106,7 +126,7 @@ class croseqTPL_POLNOD {
 	set deckerPos("A") "Dek13"
 	set deckerPos("B") "Dek24"
 
-        tplLog "polarisation mode: $polMode, wave: $wave, derotator mode: $derotatorMode"
+        tplLog "Stokes parameter: $polMode, wave: $wave, derotator mode: $derotatorMode"
         tplLog "Starting taking $SEQ(NEXPO) exposures for position $nodPos"
 
         # move the decker into the right position for the current nodding position
@@ -115,9 +135,9 @@ class croseqTPL_POLNOD {
 
 	loop i 0 $SEQ(NEXPO) {
             
-	    #rotatin beam-splitter and taking exposure
-            # TODO : where do we get the offset from ?
-            os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG $posAng" 
+	    #rotating beam-splitter and taking exposure
+            # Compute the offset angle in case of linear pol. ?
+            os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG $startAngle" 
             ExposeOnce $fits
             # the rotation is done from the current Beam splitter position (only matters for linear case)
             set curAngle [seq_dbReadSymbolic "$dbAlias.status2"]

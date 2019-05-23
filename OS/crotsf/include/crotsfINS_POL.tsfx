@@ -13,10 +13,10 @@
 
 TPL.PARAM               "INS.POL.NAME";
 INS.POL.NAME.TYPE     "keyword";
-INS.POL.NAME.RANGE    "LINEAR CIRCULAR";
-INS.POL.NAME.DEFAULT  "CIRCULAR";
-INS.POL.NAME.LABEL    "Polarization state";
-INS.POL.NAME.MINIHELP "Polarization state, linear or circular";
+INS.POL.NAME.RANGE    "V Q U";
+INS.POL.NAME.DEFAULT  "V";
+INS.POL.NAME.LABEL    "Polarization Stokes parameter";
+INS.POL.NAME.MINIHELP "Polarization Stokes parameter: V, Q, or U";
 
 
 #

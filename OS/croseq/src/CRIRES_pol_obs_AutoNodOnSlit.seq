@@ -135,8 +135,14 @@ class croseqTPL_POLNOD {
 	}
     }
 
+    # getExposureNb returns the total number of exposures
+    # n_AB = 0 is a special case: only pos A is exposed
     protected method getExposureNb { nexpo nAB numOuterLoop } {
-      return [expr {$nexpo * $nAB * 2 * $numOuterLoop * 4}]
+        if {$nAB == 0} {
+            return [expr {$nexpo * ($nAB + 1) * $numOuterLoop * 4}]
+        } else {
+            return [expr {$nexpo * $nAB * 2 * $numOuterLoop * 4}]
+        }
     }
 
     #-----------------------------------------------------------------------

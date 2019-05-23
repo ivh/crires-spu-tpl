@@ -126,11 +126,14 @@ class croseqTPL_POLNOD {
             set curAngle [seq_dbReadSymbolic "$dbAlias.status2"]
 	    tplLog "Current position is $curAngle"
             os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG [expr $curAngle+$rotAngle]" 
+            # Making sure that $dbAlias.status2 is updated after the rotation by $rotAngle
+            tplLog "Current position is $curAngle"
             ExposeOnce $fits
             ExposeOnce $fits
             # we rotate backwards from the current beam splitter position (that only changes for the linear case)
             set curAngle [seq_dbReadSymbolic "$dbAlias.status2"]
             os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG [expr $curAngle-$rotAngle]" 
+            tplLog "Current position is $curAngle"
             ExposeOnce $fits
 	}
     }

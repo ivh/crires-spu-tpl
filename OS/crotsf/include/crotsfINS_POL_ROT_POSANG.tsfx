@@ -1,0 +1,24 @@
+#******************************************************************************
+# E.S.O. - VLT project
+#
+# "@(#) $"
+#
+# who       when        what
+# --------  ----------  ----------------------------------------------
+#
+
+#************************************************************************
+#   NAME
+#   crotsfINS_POL_ROT_POSANG - Polarisation angle
+#------------------------------------------------------------------------
+#
+
+TPL.PARAM                 "INS.ROT.POSANG";
+INS.ROT.POSANG.TYPE       "number";
+INS.ROT.POSANG.RANGE      "-180..180";
+INS.ROT.POSANG.DEFAULT    "0";
+INS.ROT.POSANG.LABEL      "Polarimeter: rotation angle";
+INS.ROT.POSANG.MINIHELP   "Polarimeter rotation angle";
+
+#
+#___oOo___

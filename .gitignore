@@ -13,8 +13,7 @@
 !OS/crotsf/include/
 !OS/crotsf/include/crotsfINS_ROT*
 !OS/crotsf/include/crotsfINS_OPTI1.tsfx
-!OS/crotsf/include/crotsfINS_POL.tsfx
-!OS/crotsf/include/crotsfSEQ_POL.tsfx
+!OS/crotsf/include/crotsf*_POL*.tsfx
 
 !OS/croseq/
 !OS/croseq/src/

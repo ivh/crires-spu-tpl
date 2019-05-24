@@ -6,17 +6,17 @@
 # marquart  2018-11-28  Created
 #
 #******************************************************************************
-#   NAME
+#   TYPE
 #   crotsfINS_POL - Include other tsfx for SPU
 #    
 #------------------------------------------------------------------------------
 
-TPL.PARAM               "INS.POL.NAME";
-INS.POL.NAME.TYPE     "keyword";
-INS.POL.NAME.RANGE    "V Q U";
-INS.POL.NAME.DEFAULT  "V";
-INS.POL.NAME.LABEL    "Polarization Stokes parameter";
-INS.POL.NAME.MINIHELP "Polarization Stokes parameter: V, Q, or U";
+TPL.PARAM             "INS.POL.TYPE";
+INS.POL.TYPE.TYPE     "keyword";
+INS.POL.TYPE.RANGE    "V Q U";
+INS.POL.TYPE.DEFAULT  "V";
+INS.POL.TYPE.LABEL    "Polarization Stokes parameter";
+INS.POL.TYPE.MINIHELP "Polarization Stokes parameter: V, Q, or U";
 
 
 #

@@ -1,7 +1,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # E.S.O. - VLT project
 #
-# "@(#) $Id: CRIRES_pol_obs_AutoNodOnSlit.seq 321865 2019-05-20 13:51:49Z ccumani $"
+# "@(#) $Id: CRIRES_pol_obs_AutoNodOnSlit.seq 322066 2019-05-24 08:07:18Z mcomin $"
 #
 # who       when        what
 # --------  ----------  -------------------------------------------------------
@@ -63,6 +63,7 @@ class croseqTPL_POLNOD {
         set wave [seq_dbReadSymbolic "<alias>WLEN.filt2" ]
         set posAng $INS(ROT.POSANG)
         set polMode $INS(POL.TYPE) 
+        tplLog "Reading values - band: $wave, polMode: $polMode, posAng, $posAng"
         set bsIdx -1
         set rotAngle 0
         set dbAlias "NONE"
@@ -134,16 +135,16 @@ class croseqTPL_POLNOD {
         ExposeOnce $fits
         # the rotation is done from the current Beam splitter position (only matters for linear case)
         set curAngle [seq_dbReadSymbolic "$dbAlias.status2"]
-        tplLog "Current position is $curAngle"
+        tplLog "Read beam-splitter rotation angle is $curAngle."
         os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG [expr $curAngle+$rotAngle]" 
         # Making sure that $dbAlias.status2 is updated after the rotation by $rotAngle
-        tplLog "Current position is $curAngle"
+        tplLog "Read beam-splitter rotation angle is $curAngle."
         ExposeOnce $fits
         ExposeOnce $fits
         # we rotate backwards from the current beam splitter position (that only changes for the linear case)
         set curAngle [seq_dbReadSymbolic "$dbAlias.status2"]
         os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG [expr $curAngle-$rotAngle]" 
-        tplLog "Current position is $curAngle"
+        tplLog "Read beam-splitter rotation angle is $curAngle."
         ExposeOnce $fits
     }
     }
@@ -152,9 +153,13 @@ class croseqTPL_POLNOD {
     # n_AB = 0 is a special case: only pos A is exposed
     protected method getExposureNb { nexpo nAB numOuterLoop } {
         if {$nAB == 0} {
-            return [expr {$nexpo * ($nAB + 1) * $numOuterLoop * 4}]
+	    set nex [expr {$nexpo * ($nAB + 1) * $numOuterLoop * 4}] 
+            tplLog "nAB == 0, nex: $nex"
+	    return $nex
         } else {
-            return [expr {$nexpo * $nAB * 2 * $numOuterLoop * 4}]
+            set nex [expr {$nexpo * $nAB * 2 * $numOuterLoop * 4}]
+            tplLog "nAB > 0, nex $nex"
+	    return $nex
         }
     }
 

@@ -62,7 +62,8 @@ class croseqTPL_POLNOD {
         seeBobVars
         set wave [seq_dbReadSymbolic "<alias>WLEN.filt2" ]
         set posAng $INS(ROT.POSANG)
-        set polMode $INS(POL.TYPE) 
+        set polMode $INS(POL.TYPE)
+        set rotAngle 180 
         tplLog "Reading values - band: $wave, polMode: $polMode, posAng, $posAng"
         set bsIdx -1
         set rotAngle 0
@@ -74,35 +75,30 @@ class croseqTPL_POLNOD {
             set bsIdx 4
             set derotatorMode "STAT"
             set turretPos "YJ_circular"
-            set rotAngle 180
             set dbAlias "<alias>POLC2"
             set startAngle 0
         } elseif { $wave == "HK" && $polMode == "V"} {
             set bsIdx 3
             set derotatorMode "STAT"
             set turretPos "HK_circular"
-            set rotAngle 180
             set dbAlias "<alias>POLC1"
             set startAngle 0
         } elseif { $wave == "YJ" && $polMode == "Q"} {
             set bsIdx 2
             set derotatorMode "SKY"
             set turretPos "YJ_linear"
-            set rotAngle 90
             set dbAlias "<alias>POLL2"
             set startAngle 0
         }  elseif { $wave == "HK" && $polMode == "Q"} {
             set bsIdx 1
             set derotatorMode "SKY"
             set turretPos "HK_linear"
-            set rotAngle 90
             set dbAlias "<alias>POLL1"
             set startAngle 0
         }  elseif { $wave == "YJ" && $polMode == "U"} {
             set bsIdx 2
             set derotatorMode "SKY"
             set turretPos "YJ_linear"
-            set rotAngle 90
             set dbAlias "<alias>POLL2"
             # [TODO] make sure the angle is +45 or -45
             set startAngle 45
@@ -110,7 +106,6 @@ class croseqTPL_POLNOD {
             set bsIdx 1
             set derotatorMode "SKY"
             set turretPos "HK_linear"
-            set rotAngle 90
             set dbAlias "<alias>POLL1"
             set startAngle 45
         } else {

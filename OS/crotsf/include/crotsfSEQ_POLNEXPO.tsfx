@@ -1,0 +1,26 @@
+#******************************************************************************
+# E.S.O. - VLT project
+#
+# "@(#) $Id: crotsfSEQ_NEXPO.tsfx 181465 2009-03-09 17:20:54Z rschmutz $"
+#
+# who       when      what
+# --------  --------  ----------------------------------------------
+# alavail  11/06/18  copied from crotsfSEQ_NEXPO.tsfx
+#
+
+#************************************************************************
+#   NAME
+#   crotsfSEQ_NEXPO - number of exposures
+#    
+#------------------------------------------------------------------------
+#
+
+TPL.PARAM               "SEQ.NEXPO";
+SEQ.NEXPO.TYPE          "integer";
+SEQ.NEXPO.RANGE         "1..1";
+SEQ.NEXPO.DEFAULT       "1";
+SEQ.NEXPO.LABEL         "Number of exposures";
+SEQ.NEXPO.MINIHELP	"Number of exposures";
+ 
+#
+#___oOo___

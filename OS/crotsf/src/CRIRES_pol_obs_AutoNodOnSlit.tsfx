@@ -14,7 +14,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
 
 PAF.HDR.START;
-PAF.ID                  "$Id: CRIRES_pol_obs_AutoNodOnSlit.tsfx 321943 2019-05-22 07:43:35Z ccumani $"
+PAF.ID                  "$Id: CRIRES_pol_obs_AutoNodOnSlit.tsfx 322204 2019-05-27 12:36:07Z mcomin $"
 PAF.DESC                "Nodding along slit using jitter";
 PAF.CRTE.NAME           "tmarquar";
 PAF.CRTE.DAYTIM         "29-Nov-2018";
@@ -47,7 +47,6 @@ PAF.INCLUDE		        "crotsfDET1_ITIME.tsfx";
 PAF.INCLUDE             "crotsfSEQ_NEXPO.tsfx";
 SEQ.NEXPO.LABEL		    "Number of exposures per nodding position";
 SEQ.NEXPO.MINIHELP	    "Number of exposures per nodding position per nodding cycle";
-PAF.INCLUDE		        "crotsfINS_OPTI1.tsfx";
 PAF.INCLUDE		        "crotsfINS_WLEN_REF.tsfx";
 PAF.INCLUDE		        "crotsfSEQ_POISSON.tsfx";
 PAF.INCLUDE		        "crotsfSEQ_RETURN.tsfx";

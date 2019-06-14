@@ -1,7 +1,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # E.S.O. - VLT project
 #
-# "@(#) $Id: CRIRES_pol_obs_AutoNodOnSlit.seq 322066 2019-05-24 08:07:18Z mcomin $"
+# "@(#) $Id: CRIRES_pol_obs_AutoNodOnSlit.seq 322192 2019-05-27 08:40:16Z mcomin $"
 #
 # who       when        what
 # --------  ----------  -------------------------------------------------------
@@ -114,64 +114,63 @@ class croseqTPL_POLNOD {
             set startAngle 45
             set rotAngle 90
         } else {
-        error  "case wave $wave and polarimetric mode $polMode is not supported"
-    }
+            error  "case wave $wave and polarimetric mode $polMode is not supported"
+        }
 
-    #TODO check that decker position are correct
-    set deckerPos("A") "Dek13"
-    set deckerPos("B") "Dek24"
+        #TODO check that decker position are correct
+        set deckerPos("A") "Dek13"
+        set deckerPos("B") "Dek24"
 
-    tplLog "Stokes parameter: $polMode, wave: $wave, derotator mode: $derotatorMode"
-    tplLog "Starting taking $SEQ(NEXPO) exposures for position $nodPos"
+        tplLog "Stokes parameter: $polMode, wave: $wave, derotator mode: $derotatorMode"
+        tplLog "Starting taking $SEQ(NEXPO) exposures for position $nodPos"
 
-    # move the decker into the right position for the current nodding position
-    tplLog "Moving decker to  $deckerPos("$nodPos")"
-    os Setup "-function INS.OPTI8.NAME $deckerPos("$nodPos")"
+        # move the decker into the right position for the current nodding position
+        tplLog "Moving decker to  $deckerPos("$nodPos")"
+        os Setup "-function INS.OPTI8.NAME $deckerPos("$nodPos")"
 
-    loop i 0 $SEQ(NEXPO) {
-        #rotating beam-splitter and taking exposure
-        # Compute the offset angle in case of linear pol. ?
-        os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG $startAngle" 
-        ExposeOnce $fits
-        # the rotation is done from the current Beam splitter position (only matters for linear case)
-        set curAngle [seq_dbReadSymbolic "$dbAlias.status2"]
-        tplLog "Read beam-splitter rotation angle is $curAngle."
-        os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG [expr $curAngle+$rotAngle]" 
-        # Making sure that $dbAlias.status2 is updated after the rotation by $rotAngle
-        tplLog "Read beam-splitter rotation angle is $curAngle."        
-        ExposeOnce $fits
-        # In linear pol: move the beam-splitter by a further 90 degrees. In circular pol: don't move
-        if {$polMode != "V"} {
+        loop i 0 $SEQ(NEXPO) {
+            #rotating beam-splitter and taking exposure
+            # Compute the offset angle in case of linear pol. ?
+            os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG $startAngle" 
+            ExposeOnce $fits
+            # the rotation is done from the current Beam splitter position (only matters for linear case)
             set curAngle [seq_dbReadSymbolic "$dbAlias.status2"]
-            os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG [expr $curAngle+$rotAngle]"
+            tplLog "Read beam-splitter rotation angle is $curAngle."
+            os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG [expr $curAngle+$rotAngle]" 
+            # Making sure that $dbAlias.status2 is updated after the rotation by $rotAngle
+            tplLog "Read beam-splitter rotation angle is $curAngle."        
+            ExposeOnce $fits
+            # In linear pol: move the beam-splitter by a further 90 degrees. In circular pol: don't move
+            if {$polMode != "V"} {
+                set curAngle [seq_dbReadSymbolic "$dbAlias.status2"]
+                os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG [expr $curAngle+$rotAngle]"
+            }
+       
+            ExposeOnce $fits
+            # Circular pol: we rotate backwards from the current beam splitter position (that only changes for the linear case)
+            # Linear pol: we rotate forward by 90 degrees
+            set curAngle [seq_dbReadSymbolic "$dbAlias.status2"]
+            if {$polMode == "V"} {
+                os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG [expr $curAngle-$rotAngle]" 
+            } elseif {
+                os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG [expr $curAngle-$rotAngle]"
+            }
+            tplLog "Read beam-splitter rotation angle is $curAngle."
+            ExposeOnce $fits
         }
-   
-        ExposeOnce $fits
-        # Circular pol: we rotate backwards from the current beam splitter position (that only changes for the linear case)
-        # Linear pol: we rotate forward by 90 degrees
-        set curAngle [seq_dbReadSymbolic "$dbAlias.status2"]
-        if {$polMode == "V"} {
-            os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG [expr $curAngle-$rotAngle]" 
-        } elseif {
-            os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG [expr $curAngle-$rotAngle]"
-        }
-        tplLog "Read beam-splitter rotation angle is $curAngle."
-        ExposeOnce $fits
-    }
     }
 
     # getExposureNb returns the total number of exposures
     # n_AB = 0 is a special case: only pos A is exposed
     protected method getExposureNb { nexpo nAB numOuterLoop } {
         if {$nAB == 0} {
-	    set nex [expr {$nexpo * ($nAB + 1) * $numOuterLoop * 4}] 
+	    set nex [expr {$nexpo * $numOuterLoop * 4}] 
             tplLog "nAB == 0, nex: $nex"
-	    return $nex
         } else {
             set nex [expr {$nexpo * $nAB * 2 * $numOuterLoop * 4}]
             tplLog "nAB > 0, nex $nex"
-	    return $nex
         }
+	return $nex
     }
 
     #-----------------------------------------------------------------------

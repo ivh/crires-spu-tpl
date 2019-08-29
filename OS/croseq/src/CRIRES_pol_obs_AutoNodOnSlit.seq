@@ -1,10 +1,12 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # E.S.O. - VLT project
 #
-# "@(#) $Id: CRIRES_pol_obs_AutoNodOnSlit.seq 322192 2019-05-27 08:40:16Z mcomin $"
+# "@(#) $Id: CRIRES_pol_obs_AutoNodOnSlit.seq 324150 2019-07-19 12:14:50Z cmoins $"
 #
 # who       when        what
 # --------  ----------  -------------------------------------------------------
+# ccu/rsc   2019-07-15  No need to read currentAngle, just change POSANG
+# ???       ???         created
 #
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #   NAME
@@ -45,6 +47,12 @@ proc CRIRES_pol_obs_AutoNodOnSlit { } {
 
     tpl Execute
 
+    # we ensure that all the beam splitters are stopped 
+    os Setup "-function INS1.ROT1.MODE STAT INS1.ROT1.POSANG 0\
+                        INS1.ROT2.MODE STAT INS1.ROT2.POSANG 0\
+                        INS1.ROT3.MODE STAT INS1.ROT3.POSANG 0\
+                        INS1.ROT4.MODE STAT INS1.ROT4.POSANG 0" 
+
     return ""
 }
 
@@ -63,40 +71,38 @@ class croseqTPL_POLNOD {
         set wave [seq_dbReadSymbolic "<alias>WLEN.filt2" ]
         set posAng $INS(ROT.POSANG)
         set polMode $INS(POL.TYPE) 
-        tplLog "Reading values - band: $wave, polMode: $polMode, posAng, $posAng"
+        tplLog "Reading values - band: $wave, polMode: $polMode, posAng: $posAng"
         set bsIdx -1
         set rotAngle 0
         set dbAlias "NONE"
 
-        # [TODO] Check derotatorMode STAT or SKY for linear?
-        # [TODO] Chekc rotAngle for linear, 90 or 180?
         if { $wave == "YJ" && $polMode == "V"} {
             set bsIdx 4
             set derotatorMode "STAT"
             set turretPos "YJ_circular"
             set dbAlias "<alias>POLC2"
-            set startAngle 0
+            set startAngle [expr $posAng+0]
             set rotAngle 180
         } elseif { $wave == "HK" && $polMode == "V"} {
             set bsIdx 3
             set derotatorMode "STAT"
             set turretPos "HK_circular"
             set dbAlias "<alias>POLC1"
-            set startAngle 0
+            set startAngle [expr $posAng+0]
             set rotAngle 180
         } elseif { $wave == "YJ" && $polMode == "Q"} {
             set bsIdx 2
             set derotatorMode "SKY"
             set turretPos "YJ_linear"
             set dbAlias "<alias>POLL2"
-            set startAngle 0
+            set startAngle [expr $posAng+0]
             set rotAngle 90
         }  elseif { $wave == "HK" && $polMode == "Q"} {
             set bsIdx 1
             set derotatorMode "SKY"
             set turretPos "HK_linear"
             set dbAlias "<alias>POLL1"
-            set startAngle 0
+            set startAngle [expr $posAng+0]
             set rotAngle 90
         }  elseif { $wave == "YJ" && $polMode == "U"} {
             set bsIdx 2
@@ -104,18 +110,29 @@ class croseqTPL_POLNOD {
             set turretPos "YJ_linear"
             set dbAlias "<alias>POLL2"
             # [TODO] make sure the angle is +45 or -45
-            set startAngle 45
+            set startAngle [expr $posAng+45]
             set rotAngle 90
         }  elseif { $wave == "HK" && $polMode == "U"} {
             set bsIdx 1
             set derotatorMode "SKY"
             set turretPos "HK_linear"
             set dbAlias "<alias>POLL1"
-            set startAngle 45
+            set startAngle [expr $posAng+45]
             set rotAngle 90
         } else {
             error  "case wave $wave and polarimetric mode $polMode is not supported"
         }
+
+
+        # TODO:
+        # * Set turret to right position? This is now assumed to be done in acquisition but on the other
+        #   hand, this tpl sets OPTI1, so should be either both nor none.
+        #   ROT5.POS are 126, 42, 0, 84, 0, 84 for the 6 cases above.
+        #
+        # * Nodding position offset. The center of the nodPos A and B needs to be not the slit center,
+        #   but offset by 1.25" to match the decker holes. This could either be done in the acq-tpl
+        #   or here, simply needs to be consistent.
+        #   Optimally offsets are accumulated and reversed in a catch-clause, in case the tpl crashes.
 
         #TODO check that decker position are correct
         set deckerPos("A") "Dek13"
@@ -128,34 +145,31 @@ class croseqTPL_POLNOD {
         tplLog "Moving decker to  $deckerPos("$nodPos")"
         os Setup "-function INS.OPTI8.NAME $deckerPos("$nodPos")"
 
+        # we set the turret in the right position 
+        os Setup "-function INS1.ROT5.NAME $turretPos" 
+
+
         loop i 0 $SEQ(NEXPO) {
-            #rotating beam-splitter and taking exposure
-            # Compute the offset angle in case of linear pol. ?
+            tplLog "Setting starting-angle $startAngle and taking first exposure in current group of four."
             os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG $startAngle" 
             ExposeOnce $fits
-            # the rotation is done from the current Beam splitter position (only matters for linear case)
-            set curAngle [seq_dbReadSymbolic "$dbAlias.status2"]
-            tplLog "Read beam-splitter rotation angle is $curAngle."
-            os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG [expr $curAngle+$rotAngle]" 
-            # Making sure that $dbAlias.status2 is updated after the rotation by $rotAngle
-            tplLog "Read beam-splitter rotation angle is $curAngle."        
+       
+            os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG [expr $startAngle+$rotAngle]" 
             ExposeOnce $fits
+       
             # In linear pol: move the beam-splitter by a further 90 degrees. In circular pol: don't move
             if {$polMode != "V"} {
-                set curAngle [seq_dbReadSymbolic "$dbAlias.status2"]
-                os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG [expr $curAngle+$rotAngle]"
+                os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG [expr $startAngle+$rotAngle+$rotAngle]"
             }
-       
             ExposeOnce $fits
-            # Circular pol: we rotate backwards from the current beam splitter position (that only changes for the linear case)
-            # Linear pol: we rotate forward by 90 degrees
-            set curAngle [seq_dbReadSymbolic "$dbAlias.status2"]
+       
+            # Circular pol: go back to start angle 
+            # Linear pol: rotate forward another step
             if {$polMode == "V"} {
-                os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG [expr $curAngle-$rotAngle]" 
-            } elseif {
-                os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG [expr $curAngle-$rotAngle]"
+                os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG [expr $startAngle]" 
+            } else {
+                os Setup "-function INS1.ROT${bsIdx}.MODE $derotatorMode INS1.ROT${bsIdx}.POSANG [expr $startAngle+$rotAngle+$rotAngle+$rotAngle]"
             }
-            tplLog "Read beam-splitter rotation angle is $curAngle."
             ExposeOnce $fits
         }
     }

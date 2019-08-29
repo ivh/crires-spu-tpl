@@ -1,10 +1,11 @@
 #******************************************************************************
 # E.S.O. - VLT project
 #
-# "@(#) $Id: crotsfINS_OPTI1.tsfx 313060 2018-08-27 16:10:16Z ccumani $"
+# "@(#) $Id: crotsfINS_OPTI1.tsfx 324704 2019-08-07 07:42:29Z cmoins $"
 #
 # who       when        what
 # --------  ----------  ----------------------------------------------
+# ccumani   2019-07-10  RANGE set to "FREE GAS_N2O GAS_SGC"
 # rsc/asm   2008-11-13  GAS_VISITOR added.
 # rsc/asm   2008-04-25  GAS_CO added.
 # rschmutz  2007-03-28  created
@@ -19,7 +20,7 @@
 
 TPL.PARAM               "INS.OPTI1.NAME";
 INS.OPTI1.NAME.TYPE     "keyword";
-INS.OPTI1.NAME.RANGE    "FREE GAS_N2O GAS_SGC GAS_VISITOR";
+INS.OPTI1.NAME.RANGE    "FREE GAS_N2O GAS_SGC SPU";
 INS.OPTI1.NAME.DEFAULT  "FREE";
 INS.OPTI1.NAME.LABEL    "Gas cell";
 INS.OPTI1.NAME.MINIHELP "Gas cell";

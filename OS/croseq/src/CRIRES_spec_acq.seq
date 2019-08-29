@@ -1,10 +1,13 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # E.S.O. - VLT project
 #
-# "@(#) $Id: CRIRES_spec_acq.seq 321615 2019-05-10 13:38:19Z ccumani $"
+# "@(#) $Id: CRIRES_spec_acq.seq 323990 2019-07-16 06:36:15Z ccumani $"
 #
 # who       when        what
 # --------  ----------  -----------------------------------------------------------------
+# moins     2019-07-15  - Setting of scientific detector removed
+#                       - Final exposure with SV detector added
+# moins     2019-07-11  Handling of reference SETUP file modified
 # nslusare  2012-01-02  CCB-0000056: CRIRES entrance slit (slit1) replacement
 #                       - Removed translation of INS.SLIT.WID
 # pbaksai   2011-10-10  PPRS-041919: Install P88 IP for CRIRES on OCT-01
@@ -268,8 +271,7 @@ class croseqTPL_ACQ {
     #-----------------------------------------------------------------------
     # Execute template
     #
-    method Execute {} \
-    {
+    method Execute {} {
         tplSeeVars
         seeBobVars
 
@@ -282,20 +284,13 @@ class croseqTPL_ACQ {
         set dbSlitPos [seq_dbReadSymbolic "<alias>SLIT1.status0"]
         os setPreviousSlitWidth $dbSlitPos
 
-        #= Scientific detector setup for further use
-        set det1setupA [os Dcs1 GenDet1SetupA $DET1(READ.CURNAME)]
-        tplLog "-noExposure -function $det1setupA"
-	os Setup "-noExposure -function $det1setupA"
-
         # Slit viewer detector setup for immediate use
 	os Setup "-file CRIRES_spec_acq_SvExp.ref "
 
 	tplPanStart croseqAcqPanel
-	tplTry \
-        {
+	tplTry {
 	    $steps Execute
-	} \
-        {
+	} {
 	    #= 4. close panel
 	    tplPanStop croseqAcqPanel
 	}
@@ -903,8 +898,7 @@ class croseqTPL_ACQ {
 	# to a previous OB location).
 	checkAbortFlag
 	if { $SEQ(PRESET) } {
-	    os Setup "-file $TPL(REFSUP)"
-	    os Setup "-function \
+	    os Setup "-file $TPL(REFSUP) -function \
 		TEL.TARG.TYPE	     COORDINATE \
 		TEL.TARG.ALPHA       $alpha \
 		TEL.TARG.DELTA       $delta \
@@ -931,8 +925,7 @@ class croseqTPL_ACQ {
 	if { !$SEQ(PRESET) } {
 	    tplLog "SEQ.PRESET=F: Skipping telescope preset" red
 	    os Tcs Setav $addVelA $addVelD
-	    os Setup "-file $TPL(REFSUP)"
-	    os Setup "-function \
+	    os Setup "-file $TPL(REFSUP) -function \
 		INS1.DROT.MODE       $drotMode \
 		INS1.DROT.POSANG     $drotPosang \
 		INS.SLIT1.NAME        $INS(SLIT1.NAME)"
@@ -957,7 +950,7 @@ class croseqTPL_ACQ {
 	# while setting up the ref. wavelength: move them now to proper positions
 # ASM 2009-09-03: Not the case anymore since May 2009
 # <=Old
-#	os Setup "-file $TPL(REFSUP) -function \
+#	os Setup "-function \
 #	    INS.MODE	     Imaging \
 #	    INS1.DROT.MODE   $drotMode \
 #	    INS1.DROT.POSANG $drotPosang \
@@ -984,6 +977,9 @@ class croseqTPL_ACQ {
 	if { [os Tcs IsAoActive -wait] == 0 } {
 	    error "Active optics not started."
 	}
+
+	#= 10. tell the SV detector to take images
+        os Dcs2 StartSeq
     }
 
 

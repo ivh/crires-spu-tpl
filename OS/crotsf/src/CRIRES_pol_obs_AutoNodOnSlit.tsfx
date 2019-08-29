@@ -4,6 +4,7 @@
 #
 # who       when        what
 # --------  ----------  -------------------------------------------------------
+# tmarquar  2019-06-20  crotsfINS_OPTI1.tsfx included
 # alavail   2019-04-18  added .tsfx file setting fixed nod throw
 # tmarquar  2018-11-29  created, based on CRIRES_spec_obs_AutoNodOnSlit.tsfx
 #
@@ -14,7 +15,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
 
 PAF.HDR.START;
-PAF.ID                  "$Id: CRIRES_pol_obs_AutoNodOnSlit.tsfx 322204 2019-05-27 12:36:07Z mcomin $"
+PAF.ID                  "$Id: CRIRES_pol_obs_AutoNodOnSlit.tsfx 324150 2019-07-19 12:14:50Z cmoins $"
 PAF.DESC                "Nodding along slit using jitter";
 PAF.CRTE.NAME           "tmarquar";
 PAF.CRTE.DAYTIM         "29-Nov-2018";
@@ -47,12 +48,13 @@ PAF.INCLUDE		        "crotsfDET1_ITIME.tsfx";
 PAF.INCLUDE             "crotsfSEQ_NEXPO.tsfx";
 SEQ.NEXPO.LABEL		    "Number of exposures per nodding position";
 SEQ.NEXPO.MINIHELP	    "Number of exposures per nodding position per nodding cycle";
-PAF.INCLUDE		        "crotsfINS_WLEN_REF.tsfx";
+PAF.INCLUDE                    "crotsfINS_OPTI1.tsfx";
+PAF.INCLUDE		        "crotsfINS_WLEN_CWLEN.tsfx";
 PAF.INCLUDE		        "crotsfSEQ_POISSON.tsfx";
 PAF.INCLUDE		        "crotsfSEQ_RETURN.tsfx";
 PAF.INCLUDE		        "crotsfSEQ_NOD_DELAY.tsfx";
 PAF.INCLUDE		        "crotsfSEQ_FLUX_TOLERANCE.tsfx";
-PAF.INCLUDE		        "crotsfDET1_NCORRS_NAME.tsfx";
+PAF.INCLUDE		        "crotsfDET1_READ_CURNAME.tsfx";
 PAF.INCLUDE		        "crotsfINS_POLTYPE.tsfx";
 
 # only include this instead of _NODDING because we don't need nodthrow or jitter
@@ -65,6 +67,8 @@ SEQ.JITTER.WIDTH.RANGE    "0..0"
 SEQ.NODTHROW.DEFAULT    "2.5";
 SEQ.NODTHROW.RANGE      "2.5..2.5";
 SEQ.NABCYCLES.DEFAULT   "0";
+
+INS.OPTI1.NAME.VALUE    "SPU";
 
 #
 #___oOo___

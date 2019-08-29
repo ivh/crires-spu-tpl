@@ -1,7 +1,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # E.S.O. - VLT project
 #
-# "@(#) $Id: CRIRES_spec_acq_NGS.tsfx 315653 2018-11-06 14:07:37Z ccumani $"
+# "@(#) $Id: CRIRES_spec_acq_NGS.tsfx 324090 2019-07-18 06:10:58Z rschmutz $"
 #
 # who       when        what
 # --------  ----------  -------------------------------------------------------
@@ -28,7 +28,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 PAF.HDR.START;
-PAF.ID                  "$Id: CRIRES_spec_acq_NGS.tsfx 315653 2018-11-06 14:07:37Z ccumani $"
+PAF.ID                  "$Id: CRIRES_spec_acq_NGS.tsfx 324090 2019-07-18 06:10:58Z rschmutz $"
 PAF.DESC                "CRIRES NGS acquisition";
 PAF.CRTE.NAME           "pbiereic";
 PAF.CRTE.DAYTIM         "05-Jul-2006";
@@ -59,7 +59,7 @@ PAF.INCLUDE		"crotsfTEL.tsfx";
 TEL.TARG.OFFSETALPHA.RANGE "-22.5..22.5";
 TEL.TARG.OFFSETDELTA.RANGE "-22.5..22.5";
 PAF.INCLUDE		"crotsfSEQ_NGS.tsfx";
-PAF.INCLUDE		"crotsfINS_WLEN_REF.tsfx";
+PAF.INCLUDE		"crotsfINS_WLEN_CWLEN.tsfx";
 PAF.INCLUDE		"crotsfINS_SLIT.tsfx";
 PAF.INCLUDE		"crotsfINS_DROT.tsfx";
 PAF.INCLUDE		"crotsfINS_OPTI1.tsfx";
@@ -68,7 +68,7 @@ PAF.INCLUDE		"crotsfSEQ_SV_USELASTSKY.tsfx";
 PAF.INCLUDE		"crotsfSEQ_SV_GUIDE.tsfx";
 PAF.INCLUDE		"crotsfSEQ_FLUX_TOLERANCE.tsfx";
 PAF.INCLUDE		"crotsfSEQ_STEPS_EXEC.tsfx";
-PAF.INCLUDE		"crotsfDET1_NCORRS_NAME.tsfx";
+PAF.INCLUDE		"crotsfDET1_READ_CURNAME.tsfx";
 
 # ----------------------------------------------------------------------------- 
 #

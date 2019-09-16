@@ -69,6 +69,7 @@ PAF.INCLUDE		"crotsfSEQ_SV_GUIDE.tsfx";
 PAF.INCLUDE		"crotsfSEQ_FLUX_TOLERANCE.tsfx";
 PAF.INCLUDE		"crotsfSEQ_STEPS_EXEC.tsfx";
 PAF.INCLUDE		"crotsfDET1_READ_CURNAME.tsfx";
+PAF.INCLUDE             "crotsfSEQ_METROLOGY_ST.tsfx";
 
 # ----------------------------------------------------------------------------- 
 #

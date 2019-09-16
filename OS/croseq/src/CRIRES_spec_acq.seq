@@ -945,6 +945,11 @@ class croseqTPL_ACQ {
 	#= 8. setup ref. wavelength (intermediate slit, prism, grating and piezo)
 	checkAbortFlag
 	os Setup "-function INS.WLEN.CWLEN $INS(WLEN.CWLEN)"
+        
+        # execution of metrology if requested to adjust the position of spectral lines
+        catch {delete object mtrlgy}
+	croseqMETROLOGY mtrlgy
+	mtrlgy AlignIteratively
 
 	# baffle, calibration mirror, carriage and entrance slit might have moved
 	# while setting up the ref. wavelength: move them now to proper positions
